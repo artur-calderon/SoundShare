@@ -1,10 +1,10 @@
-import "dotenv/config";
+import "dotenv/config.js";
 import "express-async-errors";
 
 import express from "express";
 import http from "http";
 
-import "./data-source";
+import "./data-source.ts";
 
 import path from "path";
 
