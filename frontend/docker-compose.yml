@@ -1,0 +1,10 @@
+services:
+  node:
+    image: node:latest
+  front:
+    container_name: music-share
+    build: ./
+    env_file:
+      - ./.env
+    ports:
+      - 80:8080
