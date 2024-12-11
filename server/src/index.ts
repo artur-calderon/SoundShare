@@ -20,7 +20,7 @@ import { ServerSocket, Spotify, YouTube } from "./utils";
 const application = express();
 
 // Deploy
-const __dirname = path.resolve();
+// const __dirname = path.resolve();
 
 
 /** Regras da nossa API */
