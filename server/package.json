@@ -4,7 +4,7 @@
     "main": "index.js",
     "scripts": {
         "dev": "nodemon --exec ts-node ./src/index.ts",
-        "build": "rmdir /S /Q dist && tsc",
+        "build": "tsc",
         "start": "node ./dist/index.js"
     },
     "author": "Rafael Oliveira",
@@ -20,6 +20,7 @@
         "googleapis": "^143.0.0",
         "reflect-metadata": "^0.1.14",
         "socket.io": "^4.7.5",
+        "soundshare": "file:..",
         "spotify-web-api-node": "^5.0.2"
     },
     "devDependencies": {
