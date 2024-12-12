@@ -1,8 +1,8 @@
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { LockOutlined, UserOutlined } from "@ant-design/icons";
 import { Button, Checkbox, Flex, Form, Input, Layout, Space } from "antd";
 import { userContext } from "../contexts/zustand-context/UserContext.js";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Loading } from "../components/Loading.jsx";
 import Alert from "../components/Alert.jsx";
 
@@ -30,6 +30,15 @@ function Login() {
       statusMessage: store.statusMessage,
     };
   });
+
+  const navigate = useNavigate()
+
+  useEffect(()=>{
+    if(isLogged){
+      navigate('/app')
+    }
+  },[])
+
   //
   useEffect(() => {
     persistUserLogged();
@@ -45,7 +54,6 @@ function Login() {
 
   return (
     <Layout>
-      {isLogged && <Navigate to="/app" />}
       {Object.hasOwn(statusMessage, "message") && (
         <Alert msm={statusMessage.message} type={statusMessage.type} />
       )}
@@ -77,7 +85,7 @@ function Login() {
               <Space>
                 <img
                   alt="Logo Music Share"
-                  src="../../assets/Logo%20Sound%20Share%20Sem%20fundo.png"
+                  src="/Logo%20Sound%20Share%20Sem%20fundo.png"
                   width="300"
                   style={{
                     marginBottom: "5rem",
@@ -161,7 +169,7 @@ function Login() {
             >
               <img
                 alt="signup illustration"
-                src="../../assets/Login_ILLustration.svg"
+                src="/Login_ILLustration.svg"
                 width="50%"
               />
             </div>

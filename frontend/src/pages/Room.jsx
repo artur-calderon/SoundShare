@@ -12,7 +12,6 @@ import PlayerControls from "../components/PlayerControls/PlayerControls.jsx";
 import { userContext } from "../contexts/zustand-context/UserContext.js";
 import { Loading } from "../components/Loading.jsx";
 import RoomQRCode from "./RoomQRCode/Room-QRCOde.jsx";
-import { useSocket } from "../hooks/useSocket.js";
 
 function Room() {
   const { id } = useParams();
@@ -39,8 +38,6 @@ function Room() {
   const {
     connectSocket,
     sendHandShake,
-    remove_users,
-    updateSocket,
     startListeners,
   } = socketUseStore((state) => {
     return {

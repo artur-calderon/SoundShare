@@ -68,7 +68,7 @@ function SignUp() {
               align="center"
               vertical="horizontal"
             >
-              <img alt="Logo" src="/Icone%20Music%20Share.svg" width="80rem" />
+              <img alt="Logo" src="/Logo Sound Share Icone.png" width="80rem" />
 
               <Title style={{ fontWeight: "bold" }}>
                 Sign Up To Music Share
@@ -184,7 +184,7 @@ function SignUp() {
             >
               <img
                 alt="signup illustration"
-                src="../../assets/signup%20illustration.svg"
+                src="/signup%20illustration.svg"
                 width="50%"
               />
             </div>

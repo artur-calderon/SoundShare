@@ -2,7 +2,7 @@ import { Player } from "./style.js";
 import { Alert, Empty, Flex } from "antd";
 import Marquee from "react-fast-marquee";
 import ReactPlayer from "react-player/lazy";
-import emptyVideo from "../../../assets/emptyVideoWhite.svg";
+import emptyVideo from "../../../public/emptyVideoWhite.svg";
 import { Typography } from "antd";
 import { useStore } from "../../contexts/zustand-context/PlayerContext.js";
 import { SpaceContainer } from "./style.js";

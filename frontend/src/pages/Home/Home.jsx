@@ -2,7 +2,7 @@ import { ConfigProvider, Layout } from "antd";
 import { Link } from "react-router-dom";
 import { HeroSection, Menu, FeatureSection } from "./styles.js";
 import Lottie from "lottie-react";
-import notesAnimation from "../../../assets/Animation_Girl_Music.json";
+import notesAnimation from "../../../public/Animation_Girl_Music.json";
 
 function Home() {
   const { Header, Content, Footer } = Layout;
@@ -33,7 +33,7 @@ function Home() {
         >
           <img
             alt="Logo"
-            src="../../../assets/Logo%20Sound%20Share%20Sem%20fundo.png"
+            src="/Logo%20Sound%20Share%20Sem%20fundo.png"
             width="200rem"
             align="center"
           />

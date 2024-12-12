@@ -2,7 +2,7 @@ import { Layout, Menu, Modal } from "antd";
 import { menuItems } from "./menuItens.jsx";
 import { Outlet, useNavigate } from "react-router-dom";
 import { Container, SiderC } from "./styles.js";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { userContext } from "../../contexts/zustand-context/UserContext.js";
 
 export default function UserHome() {
@@ -60,7 +60,7 @@ export default function UserHome() {
         <div className="demo-logo-vertical">
           <img
             alt="logo"
-            src="../../../assets/Logo%20Sound%20Share%20Sem%20fundo.png"
+            src="/Logo%20Sound%20Share%20Sem%20fundo.png"
             width="150"
           />
         </div>

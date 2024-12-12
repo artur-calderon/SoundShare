@@ -14,7 +14,7 @@ function Header() {
     >
       <img
         alt="Logo"
-        src="../../assets/Logo%20Sound%20Share%20Sem%20fundo.png"
+        src="/Logo%20Sound%20Share%20Sem%20fundo.png"
         width="150"
       />
     </Header>
