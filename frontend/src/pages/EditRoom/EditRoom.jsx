@@ -199,7 +199,7 @@ export default function EditRoomPage() {
                         maxWidth: "100%",
                         width: "100%",
                       }}
-                      value={`http://localhost:5173/room/${id}&table=${t}`}
+                      value={`${import.meta.env.VITE_API}/room/${id}&table=${t}`}
                       viewBox={`0 0 256 256`}
                     />
                     <h3>Mesa: {t}</h3>
