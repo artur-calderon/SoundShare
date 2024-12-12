@@ -1,10 +1,10 @@
-import "dotenv/config.js";
+import "dotenv/config";
 import "express-async-errors";
 
 import express from "express";
 import http from "http";
 
-import "./data-source.ts";
+import "./data-source";
 
 import path from "path";
 
@@ -36,7 +36,7 @@ application.use(requestRegisterMiddleware);
 /** Rotas */
 application.use(routes);
 application.use(express.static(path.join(__dirname,"../../frontend/dist")));
-application.get("*", (req, res) =>{
+application.get("/*", (req, res) =>{
     res.sendFile(path.join(__dirname, "../../frontend", "dist", "index.html"));
 })
 
