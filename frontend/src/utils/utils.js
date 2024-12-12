@@ -6,7 +6,7 @@ async function talkToApi(method, route, param, data, token) {
 		try {
 			return await axios({
 				method: method,
-				url: `${import.meta.env.VITE_API}${route}${param}`,
+				url: `/${route}${param}`,
 				headers: {
 					Accept: "application/json",
 					"Content-Type": "application/json",

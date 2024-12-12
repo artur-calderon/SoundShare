@@ -33,7 +33,7 @@ export default function SearchRooms() {
   }
   useEffect(() => {
     try {
-      const res = talkToApi("get", "/genre", " ", user.accessToken);
+      const res = talkToApi("get", "genre", " ", user.accessToken);
       res.then((res) => {
         setGenres(res?.data);
       });

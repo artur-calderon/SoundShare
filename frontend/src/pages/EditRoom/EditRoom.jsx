@@ -110,7 +110,7 @@ export default function EditRoomPage() {
 
     const updateRoom = await talkToApi(
       "put",
-      "/room/",
+      "room/",
       id,
       { info },
       user.accessToken,
@@ -199,7 +199,7 @@ export default function EditRoomPage() {
                         maxWidth: "100%",
                         width: "100%",
                       }}
-                      value={`${import.meta.env.VITE_API}/room/${id}&table=${t}`}
+                      value={`/room/${id}&table=${t}`}
                       viewBox={`0 0 256 256`}
                     />
                     <h3>Mesa: {t}</h3>

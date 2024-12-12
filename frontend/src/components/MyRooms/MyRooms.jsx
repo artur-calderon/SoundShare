@@ -43,7 +43,7 @@ export default function SearchRooms() {
   });
   useEffect(() => {
     try {
-      const response = talkToApi("get", "/room", " ", {}, user.accessToken);
+      const response = talkToApi("get", "room", " ", {}, user.accessToken);
       response.then((res) => {
         const myRooms = res.data.filter((room) => room.owner === user.uid);
         setMyRooms(myRooms);
@@ -55,7 +55,7 @@ export default function SearchRooms() {
 
   useEffect(() => {
     try {
-      const res = talkToApi("get", "/genre", " ", {}, user.accessToken);
+      const res = talkToApi("get", "genre", " ", {}, user.accessToken);
       res.then((res) => {
         setGenres(res?.data);
       });
@@ -69,7 +69,7 @@ export default function SearchRooms() {
     const info = { online: true };
     const res = talkToApi(
       "put",
-      "/room",
+      "room",
       `/${roomID}`,
       { info },
       user.accessToken,
@@ -96,7 +96,7 @@ export default function SearchRooms() {
 
       await axios({
         method: "POST",
-        url: `${import.meta.env.VITE_API}/room`,
+        url: `/room`,
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",

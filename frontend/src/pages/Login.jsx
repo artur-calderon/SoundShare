@@ -1,4 +1,4 @@
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link,  useNavigate } from "react-router-dom";
 import { LockOutlined, UserOutlined } from "@ant-design/icons";
 import { Button, Checkbox, Flex, Form, Input, Layout, Space } from "antd";
 import { userContext } from "../contexts/zustand-context/UserContext.js";
@@ -37,12 +37,12 @@ function Login() {
     if(isLogged){
       navigate('/app')
     }
-  },[])
+  },[isLogged, navigate])
 
   //
   useEffect(() => {
     persistUserLogged();
-  }, []);
+  }, [persistUserLogged]);
 
   const onFinish = (values) => {
     const { email, password } = values;

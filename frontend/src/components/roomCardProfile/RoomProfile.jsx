@@ -119,7 +119,7 @@ export function RoomProfile({ roomID, token, openModal, closeModal }) {
   };
 
   function getRoomProfile() {
-    const response = talkToApi("get", "/room", `/${roomID}`, " ", token);
+    const response = talkToApi("get", "room", `/${roomID}`, " ", token);
     response.then((res) => {
       // cover: "https://firebasestorage.googleapis.com/v0/b/delivery-bot-fe36a.appspot.com/o/rock.jpg?alt=media&token=515d7958-5a96-4c37-a168-0769c50b021a";
       // description: "Rock é top";
