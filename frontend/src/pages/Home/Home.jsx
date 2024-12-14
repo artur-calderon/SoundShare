@@ -1,97 +1,130 @@
-import { ConfigProvider, Layout } from "antd";
-import { Link } from "react-router-dom";
-import { HeroSection, Menu, FeatureSection } from "./styles.js";
-import Lottie from "lottie-react";
-import notesAnimation from "../../../public/Animation_Girl_Music.json";
+import { ThemeProvider } from "styled-components";
+import { ConfigProvider } from "antd";
+import Header from "./Header/Header.jsx";
+import HeroSection from "./HeroSection/HeroSection.jsx";
+import Features from "./Features/Features.jsx";
+import Testimonials from "./Testimonials/Testimonials.jsx";
+import DownloadCTA from "./DownloadCTA/DownloadCTA.jsx";
+import Benefits from "./Benefits/Benefits.jsx";
+import VideoDemo from "./VideoDemo/VideoDemo.jsx";
+import FAQ from "./FAQ/FAQ.jsx";
+import Integrations from "./Integrations/Integrations.jsx";
+import Footer from "./Footer/Footer.jsx";
+
+const theme = {
+  colors: {
+    primary: "#f5c249",
+    secondary: "#191414",
+    background: "#FFFFFF",
+    text: "#333333",
+  },
+  fonts: {
+    body: "'Inter', sans-serif",
+    heading: "'Poppins', sans-serif",
+  },
+};
 
 function Home() {
-  const { Header, Content, Footer } = Layout;
   return (
-    <ConfigProvider
-      theme={{
-        Components: {
-          Menu: {
-            itemColor: "#FFF",
-            itemBg: "red",
+    <ThemeProvider theme={theme}>
+      <ConfigProvider
+        theme={{
+          token: {
+            colorPrimary: "#f5c249",
           },
-          Layout: {
-            headerBg: "#FFF",
-          },
-        },
-      }}
-    >
-      <Layout>
-        <Header
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            height: "5rem",
-            backgroundColor: "#FFF",
-          }}
-        >
-          <img
-            alt="Logo"
-            src="/Logo%20Sound%20Share%20Sem%20fundo.png"
-            width="200rem"
-            align="center"
-          />
-          <Menu>
-            <ul>
-              <Link to="/">About</Link>
-              <Link to="/">Pricing</Link>
-              <Link to="/">Contact Us</Link>
-            </ul>
-            <Link to="/login">Login</Link>
-            <Link to="/sign-up" className="signup">
-              Sign Up
-            </Link>
-          </Menu>
-        </Header>
-        <Content>
-          <Layout>
-            <Content
-              style={{
-                minHeight: 280,
-                backgroundColor: "#fff",
-                padding: "0 225px",
-              }}
-            >
-              <HeroSection>
-                <div className="text">
-                  <h1>Compartilhe sua Música. Conecte-se pelo Som</h1>
-                  <h3>
-                    Crie salas de música, convide amigos e ouça juntos em tempo
-                    real, onde quer que estejam.
-                  </h3>
-                  <div className="cadastre">
-                    <h2>Crie sua Sala Agora!</h2>
-                    <Link to="/sign-up" className="signup">
-                      Sign Up
-                    </Link>
-                  </div>
-                </div>
-                <div className="animation">
-                  <Lottie animationData={notesAnimation} />
-                </div>
-              </HeroSection>
-              <FeatureSection>
-                <h1>Como o Music Share transforma a forma de ouvir Música?</h1>
-              </FeatureSection>
-            </Content>
-          </Layout>
-        </Content>
-        <Footer
-          style={{
-            padding: "0 225px",
-            backgroundColor: "#fff",
-          }}
-        >
-          MusicShare ©{new Date().getFullYear()} Created by Artur Calderon
-        </Footer>
-      </Layout>
-    </ConfigProvider>
+        }}
+      >
+        <Header />
+        <main>
+          <HeroSection />
+          <Features />
+          <Testimonials />
+          <DownloadCTA />
+          <Benefits />
+          <VideoDemo />
+          <FAQ />
+          <Integrations />
+        </main>
+        <Footer />
+      </ConfigProvider>
+    </ThemeProvider>
+    // <Layout>
+    //   <HeaderC open={openMenu}>
+    //     <img
+    //       alt="Logo"
+    //       src="../../../assets/Logo%20Sound%20Share%20Sem%20fundo.png"
+    //       width="200rem"
+    //       align="center"
+    //     />
+    //     <Menu className="mobileMenu" onClick={() => setOpenMenu(!openMenu)} />
+    //     <MenuMobile>
+    //       <X
+    //         size={32}
+    //         color="black"
+    //         className="closeBtn"
+    //         onClick={() => setOpenMenu(!openMenu)}
+    //       />
+    //       <ul>
+    //         <Link to="/">
+    //           {" "}
+    //           <li>About</li>
+    //         </Link>
+    //         <Link to="/">
+    //           {" "}
+    //           <li>Pricing</li>
+    //         </Link>
+    //         <Link to="/">
+    //           <li>Contact Us</li>
+    //         </Link>
+    //       </ul>
+    //       <Link to="/login">Login</Link>
+    //       <Link to="/sign-up" className="signup">
+    //         Sign Up
+    //       </Link>
+    //     </MenuMobile>
+    //     <MenuDesktop>
+    //       <ul>
+    //         <Link to="/">About</Link>
+    //         <Link to="/">Pricing</Link>
+    //         <Link to="/">Contact Us</Link>
+    //       </ul>
+    //       <Link to="/login">Login</Link>
+    //       <Link to="/sign-up" className="signup">
+    //         Sign Up
+    //       </Link>
+    //     </MenuDesktop>
+    //   </HeaderC>
+    //   <Content>
+    //     <Layout>
+    //       <ContainerContent>
+    //         <HeroSection>
+    //           <div className="text">
+    //             <h1>Compartilhe sua Música. Conecte-se pelo Som</h1>
+    //             <h6>
+    //               Crie salas de música, convide amigos e ouça juntos em tempo
+    //               real, onde quer que estejam.
+    //             </h6>
+    //             <div className="cadastre">
+    //               <h3>Crie sua Sala Agora!</h3>
+    //               <Link to="/sign-up" className="signup">
+    //                 Sign Up
+    //               </Link>
+    //             </div>
+    //           </div>
+    //           <div className="animation">
+    //             <Lottie animationData={notesAnimation} />
+    //           </div>
+    //         </HeroSection>
+    //         <FeatureSection>
+    //           <h1>Como o Music Share transforma a forma de ouvir Música?</h1>
+    //         </FeatureSection>
+    //       </ContainerContent>
+    //     </Layout>
+    //   </Content>
+    //   <FooterContainer>
+    //     <p>MusicShare ©{new Date().getFullYear()} Created by Artur Calderon</p>
+    //   </FooterContainer>
+    // </Layout>
   );
 }
 

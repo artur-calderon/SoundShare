@@ -3,7 +3,7 @@ import { darkRoomTheme } from "../../themes/darkRoomTheme.js";
 
 import { useStore } from "../../contexts/zustand-context/PlayerContext.js";
 import AsidePlaylist from "../AsidePlaylist.jsx";
-import VideoPlayer from "../VideoPlayer/VideoPlayer.jsx";
+import VideoPlayer from "../../pages/Home/FAQ/VideoPlayer/VideoPlayer.jsx";
 import SearchMusic from "../SearchMusic/SearchMusic.jsx";
 import { userContext } from "../../contexts/zustand-context/UserContext.js";
 import RoomStats from "../RoomStats/RoomStats.jsx";

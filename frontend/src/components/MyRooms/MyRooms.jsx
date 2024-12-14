@@ -1,5 +1,4 @@
 import {
-  Space,
   Input,
   Flex,
   Card,
@@ -13,7 +12,7 @@ import {
 import { LogIn, Info } from "lucide-react";
 import { PlusOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { userContext } from "../../contexts/zustand-context/UserContext.js";
 import {
@@ -25,6 +24,8 @@ import {
 import { talkToApi } from "../../utils/utils.js";
 import Alert from "../Alert.jsx";
 import { RoomProfile } from "../roomCardProfile/RoomProfile.jsx";
+import { Loading } from "../Loading.jsx";
+import { Container, RoomContainer } from "./styles.js";
 
 export default function SearchRooms() {
   const { Meta } = Card;
@@ -35,27 +36,38 @@ export default function SearchRooms() {
   const navigate = useNavigate();
   const [showRoomProfile, setShowRoomProfile] = useState(false);
   const [roomid, setRoomid] = useState("");
+  const [loadingInfo, setLoadingInfo] = useState(true);
 
   const { user } = userContext((store) => {
     return {
       user: store.user,
     };
   });
-  useEffect(() => {
+
+  async function fetchRooms() {
     try {
-      const response = talkToApi("get", "room", " ", {}, user.accessToken);
-      response.then((res) => {
-        const myRooms = res.data.filter((room) => room.owner === user.uid);
-        setMyRooms(myRooms);
-      });
+      const response = await talkToApi(
+        "get",
+        "/room",
+        " ",
+        {},
+        user.accessToken,
+      );
+      const myRooms = response.data.filter((room) => room.owner === user.uid);
+      setMyRooms(myRooms);
     } catch (e) {
       console.log(e);
+    } finally {
+      setLoadingInfo(false);
     }
+  }
+  useEffect(() => {
+    fetchRooms();
   }, [user.uid, user.accessToken]);
 
   useEffect(() => {
     try {
-      const res = talkToApi("get", "genre", " ", {}, user.accessToken);
+      const res = talkToApi("get", "/genre", " ", {}, user.accessToken);
       res.then((res) => {
         setGenres(res?.data);
       });
@@ -64,12 +76,16 @@ export default function SearchRooms() {
     }
   }, [user.accessToken]);
 
+  if (loadingInfo) {
+    return <Loading />;
+  }
+
   function changeRoomToOnline(roomID) {
     // Muda o status da sala para online e redireciona o usuário para ela
     const info = { online: true };
     const res = talkToApi(
       "put",
-      "room",
+      "/room",
       `/${roomID}`,
       { info },
       user.accessToken,
@@ -96,7 +112,7 @@ export default function SearchRooms() {
 
       await axios({
         method: "POST",
-        url: `/room`,
+        url: `${import.meta.env.VITE_API}/room`,
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
@@ -214,79 +230,68 @@ export default function SearchRooms() {
     );
   }
   return (
-    <>
-      <Space
-        style={{
-          marginBottom: "15px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "1rem",
-          width: "100%",
-          alignItems: "flex-start",
-        }}
-      >
-        {Object.hasOwn(alertMessage, "message") && (
-          <Alert msm={alertMessage.message} type={alertMessage.type} />
-        )}
-        {isModalVisible && <ModalCreateRoom />}
+    <Container>
+      {Object.hasOwn(alertMessage, "message") && (
+        <Alert msm={alertMessage.message} type={alertMessage.type} />
+      )}
+      {isModalVisible && <ModalCreateRoom />}
 
-        <Button type="primary" onClick={() => setIsModalVisible(true)}>
-          Criar Sala
-        </Button>
-        <h3>Suas Salas</h3>
-        <Flex direction="column" justify="center" gap="1rem">
-          {myRooms.length > 0 ? (
-            myRooms.map((room) => (
-              <Card
-                key={room.id}
+      <Button type="primary" onClick={() => setIsModalVisible(true)}>
+        Criar Sala
+      </Button>
+      <h3>Suas Salas</h3>
+      <RoomContainer>
+        {myRooms.length > 0 ? (
+          myRooms.map((room) => (
+            <Card
+              key={room.id}
+              style={{
+                width: 240,
+              }}
+              cover={<img alt="example" src={room.cover} />}
+            >
+              <Meta title={room.name} description={room.description} />
+              <Meta
+                description={room.genres === genres.id ? genres.name : null}
+              />
+              <Flex
                 style={{
-                  width: 240,
+                  width: "100%",
+                  padding: "0.1rem",
+                  marginTop: "1rem",
                 }}
-                cover={<img alt="example" src={room.cover} />}
+                justify="space-between"
               >
-                <Meta title={room.name} description={room.description} />
-                <Meta
-                  description={room.genres === genres.id ? genres.name : null}
+                {/*TODO: ADicionar um put para passando online true para o back*/}
+
+                <LogIn
+                  strokeWidth={1.5}
+                  size={15}
+                  onClick={() => changeRoomToOnline(room.id)}
                 />
-                <Flex
-                  style={{
-                    width: "100%",
-                    padding: "0.1rem",
-                    marginTop: "1rem",
-                  }}
-                  justify="space-between"
-                >
-                  {/*TODO: ADicionar um put para passando online true para o back*/}
 
-                  <LogIn
-                    strokeWidth={1.5}
-                    size={15}
-                    onClick={() => changeRoomToOnline(room.id)}
-                  />
-
-                  <Info
-                    strokeWidth={1.5}
-                    size={15}
-                    onClick={() => navigate(`/app/editroom/${room.id}`)}
-                  />
-                </Flex>
-              </Card>
-            ))
-          ) : (
-            <h3>
-              Carregando Salas... <Spin />
-            </h3>
-          )}
-        </Flex>
-        {showRoomProfile && (
-          <RoomProfile
-            roomID={roomid}
-            openModal={showRoomProfile}
-            closeModal={setShowRoomProfile}
-            token={user.accessToken}
-          />
+                <Info
+                  strokeWidth={1.5}
+                  size={15}
+                  onClick={() => navigate(`/app/editroom/${room.id}`)}
+                />
+              </Flex>
+            </Card>
+          ))
+        ) : (
+          <h3>
+            Carregando Salas... <Spin />
+          </h3>
         )}
-      </Space>
-    </>
+      </RoomContainer>
+      {showRoomProfile && (
+        <RoomProfile
+          roomID={roomid}
+          openModal={showRoomProfile}
+          closeModal={setShowRoomProfile}
+          token={user.accessToken}
+        />
+      )}
+    </Container>
   );
 }

@@ -25,9 +25,6 @@ export default function UserHome() {
 
   useEffect(() => {
     if (!isLogged) {
-      Modal.info({
-        title: "User not logged in",
-      });
       navigate("/login");
     }
   }, [isLogged, navigate]);

@@ -22,4 +22,8 @@ export const SiderC = styled(Sider)`
     width: 100%;
     text-align: center;
   }
+
+  @media screen and (max-width: 568px) {
+    display: none;
+  }
 `;

@@ -6,6 +6,7 @@ import Alert from "../components/Alert.jsx";
 const boxStyle = {
   width: "50%",
   height: "100%",
+  gap: "2rem",
 };
 
 function SignUp() {
@@ -68,7 +69,11 @@ function SignUp() {
               align="center"
               vertical="horizontal"
             >
-              <img alt="Logo" src="/Logo Sound Share Icone.png" width="80rem" />
+              <img
+                alt="Logo"
+                src="/Logo%20Sound%20Share%20Sem%20fundo.png"
+                width="300"
+              />
 
               <Title style={{ fontWeight: "bold" }}>
                 Sign Up To Music Share

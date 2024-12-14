@@ -14,7 +14,7 @@ import useBreakpoint from "antd/es/grid/hooks/useBreakpoint.js";
 import { LogOut } from "lucide-react";
 import axios from "axios";
 
-function RoomQRCode({ currentMusicPlaying }) {
+function RoomQRCode() {
   const { Search } = Input;
   const { Content } = Layout;
   const { id } = useParams();
@@ -29,6 +29,7 @@ function RoomQRCode({ currentMusicPlaying }) {
     roomSpecs,
     handleSearchMusic,
     playlist,
+    currentMusicPlaying,
   } = useStore((store) => {
     return {
       playing: store.playing,
@@ -39,6 +40,7 @@ function RoomQRCode({ currentMusicPlaying }) {
       isLoading: store.isLoading,
       addMusicToPlaylist: store.addMusicToPlaylist,
       playlist: store.playlist,
+      currentMusicPlaying: store.currentMusicPlaying,
     };
   });
   const { user, isLogged } = userContext((store) => {
@@ -58,7 +60,7 @@ function RoomQRCode({ currentMusicPlaying }) {
       navigate("/login");
     }
     getInfoRoom(id, user);
-  }, [id]);
+  }, [getInfoRoom, id, isLogged, navigate, user]);
 
   useEffect(() => {}, [currentMusicPlaying]);
 

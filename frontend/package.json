@@ -31,7 +31,6 @@
     "react-toastify": "^10.0.6",
     "react-visual-grid": "^0.9.5",
     "socket.io-client": "^4.7.5",
-    "soundshare": "file:..",
     "styled-components": "^6.1.12",
     "zustand": "^4.5.5"
   },

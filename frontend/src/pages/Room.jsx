@@ -28,28 +28,22 @@ function Room() {
         updatePlaylist: store.updatePlaylist,
         playing: store.playing,
         getInfoRoom: store.getInfoRoom,
-        getMusicToRemove: store.getMusicToRemove,
-        getPlayAndPause: store.getPlayAndPause,
         roomSpecs: store.roomSpecs,
         currentMusicPlaying: store.currentMusicPlaying,
       };
     },
   );
-  const {
-    connectSocket,
-    sendHandShake,
-    startListeners,
-  } = socketUseStore((state) => {
-    return {
-      updateSocket: state.updateSocket,
-      update_users: state.update_users,
-      update_uid: state.update_uid,
-      remove_users: state.remove_users,
-      connectSocket: state.connectSocket,
-      startListeners: state.startListeners,
-      sendHandShake: state.sendHandShake,
-    };
-  });
+  const { connectSocket, sendHandShake, startListeners } = socketUseStore(
+    (state) => {
+      return {
+        update_uid: state.update_uid,
+        remove_users: state.remove_users,
+        connectSocket: state.connectSocket,
+        startListeners: state.startListeners,
+        sendHandShake: state.sendHandShake,
+      };
+    },
+  );
   const { isLogged, user } = userContext((store) => {
     return {
       user: store.user,
@@ -65,9 +59,6 @@ function Room() {
   }, [roomLocation]);
   useEffect(() => {
     if (!isLogged) {
-      Modal.info({
-        title: "User not logged in",
-      });
       navigate("/login");
     }
   }, [isLogged, navigate]);
@@ -91,7 +82,7 @@ function Room() {
     return <Loading />;
   }
   if (user.uid !== roomSpecs.owner) {
-    return <RoomQRCode currentMusicPlaying={currentMusicPlaying} />;
+    return <RoomQRCode />;
   }
   return (
     <ConfigProvider theme={changeTheme ? darkRoomTheme : lightTheme}>
