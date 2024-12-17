@@ -1,0 +1,11 @@
+# backend/nixpacks.toml
+[phases]
+# Instala as dependências
+install = "npm install"
+
+# Comando de inicialização
+start = "npm run start"
+
+[variables]
+# Porta padrão do backend
+PORT = "5000"
