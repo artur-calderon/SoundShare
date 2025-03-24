@@ -15,6 +15,7 @@ import {
 } from "./middlewares";
 import { routes } from "./routes";
 import { ServerSocket, Spotify, YouTube } from "./utils";
+import { startSocketServer } from "./utils/ServerSocket2";
 
 /** Cria o aplicativo express */
 const application = express();
@@ -52,7 +53,8 @@ const PORT = process.env.PORT ?? 1337;
 /** Inicia o servidor e o socket */
 httpServer.listen(process.env.PORT, async () => {
     /** Cria e inicia o web socket */
-    new ServerSocket(httpServer);
+    // new ServerSocket(httpServer);
+    startSocketServer(httpServer);
 
     /** Cria e inicia o Spotify */
     new Spotify();
