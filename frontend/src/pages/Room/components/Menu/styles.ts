@@ -12,4 +12,5 @@ export const ChangeRoomToOnOff = styled(Flex)`
 	align-items: center;
 	flex-direction: row;
 	gap: 1rem;
+	display: ${(props: { ishost: string }) => (props.ishost === 'true' ? "flex" : "none")};
 `

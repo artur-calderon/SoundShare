@@ -6,10 +6,15 @@ import {Header} from "./components/Header";
 import {menuItems} from "./menuItens.tsx";
 import {darkRoomTheme} from "../../../../styles/themes/roomTheme.ts";
 import {useSocketStore} from "../../../../contexts/PlayerContext/useSocketStore";
+import {useRoomStore} from "../../../../contexts/PlayerContext/useRoomStore";
+import {toast} from "react-toastify";
+import {useState} from "react";
 
 export function MenuSide() {
 	const navigate = useNavigate();
 	const {leaveRoom} = useSocketStore()
+	const {changeRoomOnOffline, isHost, roomSpecs} = useRoomStore()
+	const [roomOnlinee, setRoomOnline] = useState(roomSpecs.online)
 	const {id} = useParams();
 	// const [alert, setAlert] = useState(true);
 	// const { changeRoomToOffline, roomSpecs } = useStore();
@@ -27,27 +32,37 @@ export function MenuSide() {
 		const { key } = click;
 		switch (key) {
 			case "sair":
-				// changeRoomToOffline(false);
+					leaveRoom(id)
+					navigate("/app");
 				// localStorage.removeItem("insideRoom");
-				leaveRoom(id)
-				navigate("/app");
 		}
 	}
+
+	function  handleChangeRoomOnOff(check: boolean){
+		if(isHost){
+			changeRoomOnOffline(check, id).then(()=>{
+				toast.success(`Sala ${check ? "Online" : "Offline"}`)
+				setRoomOnline(check)
+			}).catch((e) => {
+				toast.error("Erro ao mudar o status da sala")
+			})
+		}
+
+	}
+
 	return (
 			<MenuContainer
 				vertical={true}
 			>
-				{/*{roomToOnOrOffline}*/}
 				<Header />
-				<ChangeRoomToOnOff>
+				<ChangeRoomToOnOff ishost={isHost.toString()}>
 					<PowerOff size={20} color={darkRoomTheme.token.colorPrimary}/>
-					<Switch defaultChecked  />
+					<Switch onChange={handleChangeRoomOnOff} value={roomOnlinee} defaultValue={roomSpecs.online} disabled={!isHost}/>
 					<Power size={20} color={darkRoomTheme.token.colorPrimary}/>
 				</ChangeRoomToOnOff>
 				<div
 					style={{ padding: "0 1rem", borderBottom: `0.01px solid ${darkRoomTheme.token.colorPrimary}` }}
 				></div>
-				{/*<SearchMusic/>*/}
 				<Menu mode="inline" items={menuItems} onClick={menuClick} />
 			</MenuContainer>
 	);

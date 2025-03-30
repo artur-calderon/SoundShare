@@ -48,6 +48,7 @@ export function MyRooms() {
 	// const { Meta } = Card;
 	// const [isModalVisible, setIsModalVisible] = useState(false);
 	const [myRooms, setMyRooms] = useState<Rooms[]>([]);
+	const [loadingRoomInfo, setLoadingRoomInfo] = useState(false);
 	// const [genres, setGenres] = useState([]);
 	// const [alertMessage, setAlertMessage] = useState({});
 	// const [showRoomProfile, setShowRoomProfile] = useState(false);
@@ -70,8 +71,10 @@ export function MyRooms() {
 	}, [user.accessToken]);
 
 	 function goToRoom(id: string) {
+		setLoadingRoomInfo(true)
 		 changeRoomOnOffline(true, id).then(() =>{
 			 getInfoRoom(id, user).then(()=>{
+				setLoadingRoomInfo(false)
 			    navigate(`/room/${id}`);
 			 })
 		 })
@@ -261,6 +264,7 @@ export function MyRooms() {
 							}}
 							cover={<img alt="example" src={room.cover} />}
 							onClick={() => goToRoom(room.id)}
+							loading={loadingRoomInfo}
 						>
 							<Meta title={room.name} description={room.description} />
 							<Meta

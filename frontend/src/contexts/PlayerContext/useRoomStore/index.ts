@@ -1,7 +1,8 @@
 import {create} from 'zustand';
 import {talkToApi} from "../../../utils/talkToApi";
-import {b} from "framer-motion/dist/types.d-6pKw1mTI";
 
+import {db} from "../../../services/firebase";
+import {doc, updateDoc} from "firebase/firestore";
 
 interface RoomSpecs {
 	id?:string;
@@ -48,12 +49,13 @@ interface RoomStore{
 	roomState: RoomState | null;
 	socket?: any;
 	setSocket: (socket: any) => void;
-	changeRoomOffline: (status: boolean) => Promise<void>;
+	changeRoomOffline: (status: boolean, id: string) => Promise<void>;
 	getInfoRoom: (id: string | undefined, user:User) => Promise<void>;
 	setRoomState:(newState: RoomState) => void;
 	setPlaying:(playing: boolean) => void;
 	seekTo:(time: number) => void;
 	setIsHost: (isHost: boolean) => void;
+	changeRoomOnOffline: (status: boolean, id:string) => Promise<void>;
 }
 
 export const useRoomStore = create<RoomStore>((set,get) => {
@@ -78,20 +80,17 @@ export const useRoomStore = create<RoomStore>((set,get) => {
 			}
 		},
 
-		changeRoomOffline: async (status) => {
-			const {user, roomSpecs} = get();
-			if(!roomSpecs.id || user) return;
 
-			const info = {online: status}
 
-			const res = await talkToApi("put", `/room/`, roomSpecs.id, user.accessToken, {info})
-
-			// @ts-ignore
-			if(res.status === 200 ){
-				get().getInfoRoom(roomSpecs.id, user)
-			}else {
-				// @ts-ignore
-				console.log(res.status)
+		changeRoomOnOffline: async (status, id) => {
+			try{
+				const roomRef = doc(db, "rooms", id);
+				await updateDoc(roomRef, {
+					online: status
+				})
+				get().getInfoRoom(id, get().user)
+			}catch (e){
+				console.log(e)
 			}
 
 		},
