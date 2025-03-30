@@ -26,7 +26,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
 		connect: async (roomId) => {
 			const {user} = userContext.getState()
 
-			const  [socket] = await Promise.all([io('http://localhost:1337', {
+			const  [socket] = await Promise.all([io('/', {
 				reconnectionAttempts: 5,
 				reconnectionDelay: 5000,
 				autoConnect: true,
