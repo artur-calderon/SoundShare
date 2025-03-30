@@ -6,11 +6,9 @@ import emptyVideo from "../../../public/emptyVideoWhite.svg";
 import {usePlayerStore} from "../../contexts/PlayerContext/usePlayerStore";
 import {usePlaylistStore} from "../../contexts/PlayerContext/usePlaylistStore";
 import {useRoomStore} from "../../contexts/PlayerContext/useRoomStore";
-import {useEffect, useRef, useState} from "react";
+import {useEffect, useRef, } from "react";
 import {useSocketStore} from "../../contexts/PlayerContext/useSocketStore";
 import {useParams} from "react-router-dom";
-import {Simulate} from "react-dom/test-utils";
-import playing = Simulate.playing;
 
 
 
@@ -22,7 +20,6 @@ export function VideoPlayer() {
 
 	const playerRef = useRef<ReactPlayer>(null)
 	const {id} = useParams()
-	console.log(id)
 	useEffect(() => {
 
 		//recebe a sincronização do servidor
@@ -37,13 +34,11 @@ export function VideoPlayer() {
 
 
 	socket?.on('updatePlayed', ({played})=>{
-		console.log(played)
 		if(!isHost && playerRef.current){
 			playerRef.current.seekTo(played,"fraction")
 		}
 	})
 
-	console.log(isHost)
 
 	const handleProgress = (state: {played: number}) =>{
 		if(isHost){

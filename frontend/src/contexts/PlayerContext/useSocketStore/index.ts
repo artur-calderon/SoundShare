@@ -4,6 +4,7 @@ import {io, Socket} from 'socket.io-client'
 
 import {useRoomStore} from "../useRoomStore";
 import {userContext} from "../../UserContext.tsx";
+import {usePlayerStore} from "../usePlayerStore";
 
 
 interface SocketState {
@@ -32,7 +33,6 @@ export const useSocketStore = create<SocketState>((set, get) => {
 				transports: ['websocket'],
 			})]);
 			socket.on('connect', () => {
-				console.log('coneected')
 				socket.emit('joinRoom', {roomId, userId: user.id});
 				get().sendHandShake()
 				set({ connected: true, socket });
@@ -47,8 +47,12 @@ export const useSocketStore = create<SocketState>((set, get) => {
 			const {socket} = get()
 
 			socket?.on('updateRoom', data => {
+				const { playMusic } = usePlayerStore.getState();
 				useRoomStore.getState().setRoomState(data)
 				useRoomStore.getState().setIsHost(useRoomStore.getState().roomSpecs.owner === userContext.getState().user.id)
+				if (useRoomStore.getState().roomState?.currentTrack) {
+					playMusic(useRoomStore.getState().roomState?.currentTrack, useRoomStore.getState().roomState?.currentTrack.user);
+				}
 			})
 
 		},

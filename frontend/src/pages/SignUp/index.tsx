@@ -21,7 +21,6 @@ function SignUp() {
 
 
 	async function singUP(data: UserDataToCreate) {
-		console.log(data)
 		await createUser(data);
 		form.resetFields();
 	}

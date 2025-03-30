@@ -8,8 +8,10 @@ import {
 } from "../../services/firebase.ts";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import {useEffect, useState} from "react";
-import {Link} from "react-router-dom";
+import {Link, Navigate, useNavigate} from "react-router-dom";
 import {Info, LogIn} from "lucide-react";
+import {useRoomStore} from "../../contexts/PlayerContext/useRoomStore";
+import {userContext} from "../../contexts/UserContext.tsx";
 // import { Link } from "react-router-dom";
 // import { RoomProfile } from "../roomCardProfile/RoomProfile.jsx";
 
@@ -17,6 +19,10 @@ export function SearchRooms() {
 	const { Search } = Input;
 	const { Meta } = Card;
 	const [roomsOnline, setRoomsOnline] = useState([]);
+	const [loadingRoomInfo, setLoadingRoomInfo] = useState(false);
+	const navigate = useNavigate()
+	const {getInfoRoom} = useRoomStore()
+	const {user} = userContext()
 	// const [genres, setGenres] = useState([]);
 	// const [showRoomProfile, setShowRoomProfile] = useState(false);
 	// const [roomid, setRoomid] = useState("");
@@ -53,6 +59,16 @@ export function SearchRooms() {
 			setRoomsOnline(rooms);
 		});
 	}, []);
+
+	function enterRoom(id:string){
+		setLoadingRoomInfo(true)
+		getInfoRoom(id, user).then(() => {
+			setLoadingRoomInfo(false)
+			navigate(`/room/${id}`)
+		})
+	}
+
+
 	return (
 		<>
 			<Space
@@ -79,9 +95,12 @@ export function SearchRooms() {
 								hoverable
 								style={{
 									width: 240,
+									cursor: "pointer",
 								}}
 								key={room.id}
 								cover={<img alt="example" src={room.cover} />}
+								onClick={() => enterRoom(room.id)}
+								loading={loadingRoomInfo}
 							>
 								<Meta title={room.name} description={room.description} />{" "}
 								<Meta

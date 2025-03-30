@@ -16,23 +16,14 @@ export function Playlist() {
 
 	const {playlist, removeTrack} = usePlaylistStore()
 	const {playMusic} = usePlayerStore()
-	const {roomState} = useRoomStore()
+	const {roomState, isHost} = useRoomStore()
 	const {id} = useParams()
 
 	const [playlistMusic, setPlaylistMusic] = useState([]);
 
-	// function highlightTheCurrentMusic(playlistMusic) {
-	// 	if (currentMusicPlaying.video?.url === playlistMusic) {
-	// 		return `3px solid ${primary}`;
-	// 	} else {
-	// 		return " ";
-	// 	}
-	// }
-
 	// @ts-ignore
 	useEffect(() => {
 			if (roomState?.playlist?.length > 0) {
-				// console.log(data)
 				usePlaylistStore.setState((state) => ({playlist: [...state.playlist, roomState?.playlist]}))
 			}
 
@@ -62,7 +53,7 @@ export function Playlist() {
 						itemLayout="vertical"
 						style={{ width: "auto" }}
 						size="small"
-						dataSource={playlistMusic}
+						dataSource={roomState?.playlist}
 						renderItem={(item) => (
 							<List.Item
 								style={{
@@ -71,13 +62,15 @@ export function Playlist() {
 
 									// borderLeft: `${highlightTheCurrentMusic(item.video.url)}`,
 								}}
+
 								actions={[
+									...(isHost ?[
 									<Tooltip title="Tocar agora" placement="top" key="play">
 										<PlayCircleOutlined
 											onClick={() => {
 												playMusic(id,item);
 											}}
-											style={{ fontSize: "20px", marginRight: "20px" }}
+											style={{ fontSize: "20px", marginRight: "20px" ,display: isHost ? "block" : "none"}}
 										/>
 									</Tooltip>,
 									<Tooltip
@@ -87,9 +80,12 @@ export function Playlist() {
 									>
 										<DeleteOutlined
 											onClick={() => removeTrack(item.url)}
-											style={{ fontSize: "20px" }}
+											style={{ fontSize: "20px" , display: isHost ? "block" : "none"}}
+
 										/>
 									</Tooltip>,
+
+									]:[])
 								]}
 								extra={
 									<img

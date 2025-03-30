@@ -65,7 +65,6 @@ export const usePlayerStore = create<PlayerState>((set) => {
 		mute: false,
 		seekTime: 0,
 		setPlay: () => set((state) => ({ play: !state.play })),
-		setTrack: (track) => set({ currentTrack: track }),
 		setIsPlaying: (isPlaying) => set({ isPlaying }),
 		setVolume: (volume) => set({ volume }),
 		setMute: () => {
@@ -81,7 +80,7 @@ export const usePlayerStore = create<PlayerState>((set) => {
 			try{
 				if(text === undefined)return
 				const res = await talkToApi("get","video?search=",text,user.accessToken);
-				set({searchResults:res.data})
+				set({searchResults:res?.data})
 			}catch(e){
 				console.log(e)
 			}finally {
@@ -90,7 +89,7 @@ export const usePlayerStore = create<PlayerState>((set) => {
 		},
 
 		playMusic: (roomId , track)=>{
-			const {playlist,addTrack} = usePlaylistStore.getState()
+			const {addTrack} = usePlaylistStore.getState()
 			const {user} = userContext.getState()
 			const {socket} = useSocketStore.getState()
 
@@ -103,13 +102,9 @@ export const usePlayerStore = create<PlayerState>((set) => {
 				user: user
 			}
 
-			const isAlreadyInPlaylist = playlist.some(music => music.url === trackMusic.url)
+			addTrack(roomId,trackMusic)
 
-			if(!isAlreadyInPlaylist){
-				addTrack(roomId,trackMusic)
-			}
 			socket?.emit('playTrack', {roomId, track: trackMusic, userId: user.id});
-			// set({currentTrack:trackMusic, isPlaying:true, play:true})
 		}
 
 	}

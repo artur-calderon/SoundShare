@@ -27,6 +27,7 @@ import {userContext} from "../../contexts/UserContext.tsx";
 import {Info, LogIn} from "lucide-react";
 import Meta from "antd/es/card/Meta";
 import {genres} from "../EditRoom/styles.tsx";
+import {useRoomStore} from "../../contexts/PlayerContext/useRoomStore";
 
 
 interface Rooms {
@@ -49,13 +50,13 @@ export function MyRooms() {
 	const [myRooms, setMyRooms] = useState<Rooms[]>([]);
 	// const [genres, setGenres] = useState([]);
 	// const [alertMessage, setAlertMessage] = useState({});
-	// const navigate = useNavigate();
 	// const [showRoomProfile, setShowRoomProfile] = useState(false);
 	// const [roomid, setRoomid] = useState("");
 	// const [loadingInfo, setLoadingInfo] = useState(true);
 
 
 	const { user } = userContext();
+	const { changeRoomOnOffline, getInfoRoom} =  useRoomStore()
 
 	const navigate = useNavigate();
 
@@ -67,6 +68,14 @@ export function MyRooms() {
 
 		})
 	}, [user.accessToken]);
+
+	 function goToRoom(id: string) {
+		 changeRoomOnOffline(true, id).then(() =>{
+			 getInfoRoom(id, user).then(()=>{
+			    navigate(`/room/${id}`);
+			 })
+		 })
+	}
 
 	// useEffect(() => {
 	// 	try {
@@ -248,8 +257,10 @@ export function MyRooms() {
 							key={room.id}
 							style={{
 								width: 240,
+								cursor: "pointer",
 							}}
 							cover={<img alt="example" src={room.cover} />}
+							onClick={() => goToRoom(room.id)}
 						>
 							<Meta title={room.name} description={room.description} />
 							<Meta
@@ -268,7 +279,7 @@ export function MyRooms() {
 								<LogIn
 									strokeWidth={1.5}
 									size={15}
-									onClick={() => navigate(`/room/${room.id}`)}
+									onClick={() => goToRoom(room.id)}
 								/>
 
 								<Info

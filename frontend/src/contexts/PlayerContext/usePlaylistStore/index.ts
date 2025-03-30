@@ -3,6 +3,7 @@ import {usePlayerStore} from "../usePlayerStore";
 
 import {useSocketStore} from "../useSocketStore";
 import {userContext} from "../../UserContext.tsx";
+import {useRoomStore} from "../useRoomStore";
 
 
 interface User {
@@ -40,7 +41,7 @@ export const usePlaylistStore = create<PlaylistState>((set, get) => {
 		playlist: [],
 		currentIndex: 0,
 		addTrack: (track, roomId) => {
-			const {playlist} = get()
+			const {roomState} = useRoomStore.getState()
 			const {user} = userContext.getState()
 			const {socket} = useSocketStore.getState()
 			const trackMusic = {
@@ -50,7 +51,7 @@ export const usePlaylistStore = create<PlaylistState>((set, get) => {
 				thumbnail: track.thumbnail,
 				user: user
 			}
-			const isAlreadyInPlaylist = playlist.some(music => music.url === trackMusic.url)
+			const isAlreadyInPlaylist = roomState?.playlist.some(music => music.url === trackMusic.url)
 
 			if(!isAlreadyInPlaylist){
 			socket?.emit('addTrack', {roomId, track: trackMusic})
@@ -59,54 +60,61 @@ export const usePlaylistStore = create<PlaylistState>((set, get) => {
 
 		},
 
-		nextSong: () =>{
-			const {playlist} = get()
-			const {currentTrack, played, playMusic}= usePlayerStore.getState()
+		nextSong: () => {
+			const {roomSpecs} = useRoomStore.getState()
+			const {socket} = useSocketStore.getState()
+			const { roomState } = useRoomStore.getState();
+			const { currentTrack, played, playMusic } = usePlayerStore.getState();
 
-			if(playlist.length === 0){
-				console.log('Playlist is empty')
-				usePlayerStore.getState().setPlay()
-				return
+			if (roomState?.playlist.length === 0) {
+				console.log("Playlist is empty");
+				usePlayerStore.getState().setPlay();
+				return;
 			}
 
-			const currentIndex = playlist.findIndex(track => track.url === currentTrack.url)
+
+			const currentIndex = roomState?.playlist.findIndex((track) => track.url === roomState.currentTrack?.url);
 			const finishedPlayed = played * 100;
+			if (currentIndex !== -1 && (finishedPlayed >= 99 || currentIndex < roomState.playlist.length - 1)) {
+				// @ts-ignore
+				const nextTrack = roomState?.playlist[currentIndex + 1];
+				// Atualiza a música apenas se houver próxima
+				if (nextTrack) {
+					playMusic(roomSpecs.id, nextTrack);
 
-			if(currentIndex !== -1 && (finishedPlayed>= 99 || currentIndex < playlist.length - 1)){
-				playMusic(playlist[currentIndex + 1], playlist[currentIndex + 1].user)
-			}else {
-				console.log('End of playlist')
-				usePlayerStore.getState().setPlay()
+					// Envia a nova música para os outros usuários
+					socket?.emit("syncNextSong", { roomId: roomSpecs.id,track: nextTrack });
+				}
+			} else {
+				console.log("End of playlist");
+				usePlayerStore.getState().setPlay();
 			}
-
-
 		},
 
-		beforeSong: () =>{
-			const { playlist } = get();
-			const { currentTrack, playMusic, setPlay } = usePlayerStore.getState();
+		beforeSong: () => {
+			const {roomSpecs, roomState} = useRoomStore.getState()
+			const {socket} = useSocketStore.getState()
+			const {  playMusic, setPlay } = usePlayerStore.getState();
 
-			if (playlist.length === 0) {
+			if (roomState?.playlist.length === 0) {
 				console.log("Playlist vazia");
 				setPlay();
 				return;
 			}
 
-			// Encontra o índice da música atual
-			const currentIndex = playlist.findIndex(music => music.url === currentTrack?.url);
 
-			// Se houver uma música anterior, toca ela
+			const currentIndex = roomState?.playlist.findIndex((music) => music.url === roomState.currentTrack?.url);
+
 			if (currentIndex > 0) {
-				playMusic(playlist[currentIndex - 1], playlist[currentIndex - 1].user);
+				const previousTrack = roomState?.playlist[currentIndex - 1];
+				playMusic(roomSpecs.id, previousTrack);
+
+				// Envia a atualização para os outros usuários
+				socket?.emit("syncBeforeSong", { roomId:roomSpecs.id,  track: previousTrack });
 			} else {
 				console.log("Primeira música da playlist");
 			}
-
 		},
-
-		removeTrack: (url) => set((state) => ({
-			playlist: state.playlist.filter(track => track.url !== url)
-		})),
 
 
 

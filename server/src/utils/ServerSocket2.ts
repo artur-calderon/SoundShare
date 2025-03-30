@@ -68,6 +68,7 @@ export function startSocketServer(server: any) {
       "addTrack",
       ({ roomId, track }: { roomId: string; track: Track }) => {
         if (rooms[roomId]) {
+          if (rooms[roomId].playlist.includes(track)) return;
           rooms[roomId].playlist.push(track);
           io.to(roomId).emit("updateRoom", rooms[roomId]);
         }
@@ -99,6 +100,20 @@ export function startSocketServer(server: any) {
         }
       },
     );
+    socket.on("syncNextSong", ({ roomId, track }) => {
+      console.log(track);
+      if (rooms[roomId] && track) {
+        rooms[roomId].currentTrack = track;
+        io.to(roomId).emit("updateRoom", rooms[roomId]); // Atualiza a sala inteira
+      }
+    });
+
+    socket.on("syncBeforeSong", ({ roomId, track }) => {
+      if (rooms[roomId]) {
+        rooms[roomId].currentTrack = track;
+        io.to(roomId).emit("updateRoom", rooms[roomId]);
+      }
+    });
 
     socket.on("leaveRoom", ({ roomId, userId }) => {
       socket.leave(roomId);

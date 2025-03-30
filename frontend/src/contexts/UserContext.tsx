@@ -59,7 +59,6 @@ export const userContext = create<UserContextProps>((set)=> {
 			try {
 				const response = await signInWithEmailAndPassword(auth, email, password);
 				const userInfo = await GetUserInfo(response.user.uid);
-				console.log(userInfo)
 				set({
 					user: {
 						id: userInfo.id,
