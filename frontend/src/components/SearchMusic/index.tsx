@@ -23,7 +23,7 @@ export function SearchMusic() {
 			// results={results}
 			// playlist={playlist}
 		>
-			<Space style={{ marginBottom: "15px", alignSelf:"flex-start" }} >
+			<Space style={{ marginBottom: "1px", alignSelf:"flex-start" }} >
 				<Search
 					placeholder="Procure sua Música Favorita"
 					enterButton="Pesquisar"

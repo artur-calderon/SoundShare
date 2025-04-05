@@ -8,7 +8,9 @@ import {darkRoomTheme} from "../../../../styles/themes/roomTheme.ts";
 import {useSocketStore} from "../../../../contexts/PlayerContext/useSocketStore";
 import {useRoomStore} from "../../../../contexts/PlayerContext/useRoomStore";
 import {toast} from "react-toastify";
-import {useState} from "react";
+import {useEffect, useState} from "react";
+
+import {motion} from "framer-motion";
 
 export function MenuSide() {
 	const navigate = useNavigate();
@@ -16,17 +18,29 @@ export function MenuSide() {
 	const {changeRoomOnOffline, isHost, roomSpecs} = useRoomStore()
 	const [roomOnlinee, setRoomOnline] = useState(roomSpecs.online)
 	const {id} = useParams();
-	// const [alert, setAlert] = useState(true);
-	// const { changeRoomToOffline, roomSpecs } = useStore();
-	// useEffect(() => {
-	// 	if (roomSpecs.online === true) {
-	// 		setAlert(true);
-	// 	} else setAlert(false);
-	// }, [roomSpecs]);
-	//
-	// const roomToOnOrOffline = useMemo(() => {
-	// 	return <Alert msm={alert ? "Sala Online" : "Sala Offiline"} type="info" />;
-	// }, [alert]);
+
+	// Estado para controlar o modo do menu
+	const [menuMode, setMenuMode] = useState<"inline" | "vertical">("inline");
+
+	useEffect(() => {
+		// Função para verificar a largura da tela e definir o modo do menu
+		const handleResize = () => {
+			if (window.innerWidth <= 768) {
+				setMenuMode("vertical");
+			} else {
+				setMenuMode("inline");
+			}
+		};
+
+		// Verifica ao carregar o componente
+		handleResize();
+
+		// Adiciona o event listener
+		window.addEventListener("resize", handleResize);
+
+		// Remove o event listener ao desmontar
+		return () => window.removeEventListener("resize", handleResize);
+	}, []);
 
 	function menuClick(click: { key: any; }) {
 		const { key } = click;
@@ -57,13 +71,22 @@ export function MenuSide() {
 				<Header />
 				<ChangeRoomToOnOff ishost={isHost.toString()}>
 					<PowerOff size={20} color={darkRoomTheme.token.colorPrimary}/>
-					<Switch onChange={handleChangeRoomOnOff} value={roomOnlinee} defaultValue={roomSpecs.online} disabled={!isHost}/>
+					<motion.div layout transition={{type: 'spring', stiffness: 300, damping: 20}}>
+						<Switch
+							checked={roomOnlinee}
+							onChange={handleChangeRoomOnOff}
+							checkedChildren="Online"
+							unCheckedChildren="Offline"
+						/>
+					</motion.div>
+					{/*<Switch onChange={handleChangeRoomOnOff} value={roomOnlinee} defaultValue={roomSpecs.online}*/}
+					{/*        disabled={!isHost}/>*/}
 					<Power size={20} color={darkRoomTheme.token.colorPrimary}/>
 				</ChangeRoomToOnOff>
 				<div
-					style={{ padding: "0 1rem", borderBottom: `0.01px solid ${darkRoomTheme.token.colorPrimary}` }}
+					style={{padding: "0 1rem", borderBottom: `0.01px solid ${darkRoomTheme.token.colorPrimary}`}}
 				></div>
-				<Menu mode="inline" items={menuItems} onClick={menuClick} />
+				<Menu mode={menuMode} items={menuItems} onClick={menuClick}/>
 			</MenuContainer>
 	);
 }

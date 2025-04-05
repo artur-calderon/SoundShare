@@ -1,22 +1,14 @@
-import {Link, useNavigate,} from "react-router-dom";
+import {Link,} from "react-router-dom";
 import { LockOutlined, UserOutlined } from "@ant-design/icons";
 import { Button, Checkbox, Flex, Form, Input, Layout, Space } from "antd";
 import { userContext } from "../../contexts/UserContext.tsx";
-import { useEffect } from "react";
 import { Container, FlexContent } from "./styles.ts";
 
 export function Login() {
 	const { Content } = Layout;
-	const {loginWithGoogle, loginLoad, isLoggedIn, loginWithEmailAndPassword, persistUserLogged} = userContext()
+	const {loginWithGoogle, loginLoad,  loginWithEmailAndPassword,} = userContext()
 
-	const navigate = useNavigate();
 
-	useEffect(() => {
-		persistUserLogged()
-		if(isLoggedIn){
-			navigate("/app");
-		}
-	}, [isLoggedIn, navigate, persistUserLogged]);
 
 
 	const onFinish =  (values: { email: string; password: string; }) => {

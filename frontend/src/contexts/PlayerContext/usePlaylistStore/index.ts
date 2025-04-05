@@ -27,7 +27,7 @@ interface PlaylistState {
 	playlist: Track[];
 	currentIndex: number;
 	addTrack: (roomId: string, track: Track) => void;
-	removeTrack: (id: string) => void;
+	removeTrack: (trackUrl: string) => void;
 	clearPlaylist: () => void;
 	setCurrentIndex: (index: number) => void;
 	nextSong: () => void;
@@ -58,6 +58,18 @@ export const usePlaylistStore = create<PlaylistState>((set, get) => {
 			// set((state) => ({ playlist: [...state.playlist, trackMusic] }))
 			}else {return}
 
+		},
+
+		removeTrack: (trackUrl: string) => {
+			const { roomSpecs } = useRoomStore.getState();
+			const { socket } = useSocketStore.getState();
+
+			if (!roomSpecs?.id || !socket) return;
+
+			socket.emit("removeTrack", {
+				roomId: roomSpecs.id,
+				trackUrl: trackUrl,
+			});
 		},
 
 		nextSong: () => {

@@ -3,7 +3,7 @@ import {api} from '../lib/axios.ts'
 
 
 import {auth, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signOut} from "../services/firebase.ts";
-import {GoogleAuthProvider} from "firebase/auth";
+import {GoogleAuthProvider, getIdToken} from "firebase/auth";
 
 import {GetUserInfo} from "../hooks/getUserInfo.ts"
 
@@ -125,11 +125,12 @@ export const userContext = create<UserContextProps>((set)=> {
 			try{
 				onAuthStateChanged(auth, async (user) => {
 					if (user) {
+						const newToken = await getIdToken(user, true);
 						const userInfo = await GetUserInfo(user.uid);
 						set({
 							user: {
 								id: userInfo.id,
-								accessToken: user.accessToken,
+								accessToken: newToken,
 								name: userInfo.name,
 								email: userInfo.email,
 								image: userInfo.image,
@@ -151,7 +152,7 @@ export const userContext = create<UserContextProps>((set)=> {
 			try
 			{
 				await signOut(auth).then(()=>{
-					set({isLoggedIn: false})
+					set({isLoggedIn: false,user:{ id: '', accessToken: '', name: '', email: '', image: '', role: '' }})
 					}
 				)
 			}catch (e){

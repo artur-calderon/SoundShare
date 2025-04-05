@@ -48,7 +48,7 @@ export function MyRooms() {
 	// const { Meta } = Card;
 	// const [isModalVisible, setIsModalVisible] = useState(false);
 	const [myRooms, setMyRooms] = useState<Rooms[]>([]);
-	const [loadingRoomInfo, setLoadingRoomInfo] = useState(false);
+	const [loading, setLoading] = useState(false);
 	// const [genres, setGenres] = useState([]);
 	// const [alertMessage, setAlertMessage] = useState({});
 	// const [showRoomProfile, setShowRoomProfile] = useState(false);
@@ -71,10 +71,10 @@ export function MyRooms() {
 	}, [user.accessToken]);
 
 	 function goToRoom(id: string) {
-		setLoadingRoomInfo(true)
+		 setLoading(true);
 		 changeRoomOnOffline(true, id).then(() =>{
 			 getInfoRoom(id, user).then(()=>{
-				setLoadingRoomInfo(false)
+				 setLoading(false);
 			    navigate(`/room/${id}`);
 			 })
 		 })
@@ -95,160 +95,10 @@ export function MyRooms() {
 	// 	return <Loading />;
 	// }
 
-	// function changeRoomToOnline(roomID) {
-	// 	// Muda o status da sala para online e redireciona o usuário para ela
-	// 	const info = { online: true };
-	// 	const res = talkToApi(
-	// 		"put",
-	// 		"/room",
-	// 		`/${roomID}`,
-	// 		{ info },
-	// 		user.accessToken,
-	// 	);
-	// 	res
-	// 		.then(() => {
-	// 			navigate(`/room/${roomID}`);
-	// 		})
-	// 		.catch((e) => console.log(e));
-	// }
-	// function openProfileRoom(id) {
-	// 	setRoomid(id);
-	// 	setShowRoomProfile(!showRoomProfile);
-	// }
 
-	// function ModalCreateRoom() {
-	// 	const [form] = Form.useForm();
-	// 	const { TextArea } = Input;
-	// 	const [file, setFile] = useState(null);
-	//
-	// 	async function HandleCreateRoom(values) {
-	// 		let genres = [];
-	// 		genres.push(values.genero);
-	//
-	// 		await axios({
-	// 			method: "POST",
-	// 			url: `${import.meta.env.VITE_API}/room`,
-	// 			headers: {
-	// 				Accept: "application/json",
-	// 				"Content-Type": "application/json",
-	// 				Authorization: `Bearer ${user.accessToken}`,
-	// 			},
-	// 			data: {
-	// 				info: {
-	// 					name: values.nomedasala,
-	// 					description: values.descricao,
-	// 					cover: file,
-	// 					genres: genres,
-	// 					owner: user.uid,
-	// 				},
-	// 			},
-	// 		})
-	// 			.then((res) => {
-	// 				console.log(res);
-	// 				if (res.status === 2001) {
-	// 					setAlertMessage({
-	// 						message: "Sala Criada com Sucesso!",
-	// 						type: "success",
-	// 					});
-	// 				}
-	// 			})
-	// 			.catch((e) => {
-	// 				setAlertMessage({ message: e.response.data.message, type: "error" });
-	// 			});
-	// 	}
-	// 	async function handleFile(file) {
-	// 		const storageRef = ref(storage, file.name);
-	// 		await uploadBytes(storageRef, file)
-	// 			.then(() => {
-	// 				getDownloadURL(storageRef).then((url) => {
-	// 					setFile(url);
-	// 				});
-	// 			})
-	// 			.catch((e) => {
-	// 				console.log(e);
-	// 			});
-	// 	}
-	// 	function cancelModal() {
-	// 		setAlertMessage({});
-	// 		setIsModalVisible(false);
-	// 	}
-	// 	return (
-	// 		<Modal
-	// 			title="Crie sua Sala"
-	// 			open={isModalVisible}
-	// 			onCancel={() => cancelModal()}
-	// 			footer={null}
-	// 		>
-	// 			<Form
-	// 				labelCol={{
-	// 					span: 4,
-	// 				}}
-	// 				wrapperCol={{
-	// 					span: 14,
-	// 				}}
-	// 				layout="horizontal"
-	// 				style={{
-	// 					maxWidth: 600,
-	// 					width: "50rem",
-	// 				}}
-	// 				form={form}
-	// 				onFinish={HandleCreateRoom}
-	// 			>
-	// 				<Form.Item label="Nome da Sala" name="nomedasala">
-	// 					<Input />
-	// 				</Form.Item>
-	// 				<Form.Item label="Gênero" name="genero">
-	// 					<Select>
-	// 						{genres.map((genre) => (
-	// 							<Select.Option key={genre.id} value={genre.id}>
-	// 								{genre.name}
-	// 							</Select.Option>
-	// 						))}
-	// 					</Select>
-	// 				</Form.Item>
-	// 				<Form.Item label="Descrição" name="descricao">
-	// 					<TextArea rows={4} />
-	// 				</Form.Item>
-	// 				<Form.Item label="Capa" valuePropName="fileList">
-	// 					<Upload
-	// 						action={handleFile}
-	// 						listType="picture-card"
-	// 						accept="image/png, image/jpeg"
-	// 						maxCount={1}
-	// 						multiple
-	// 					>
-	// 						<button
-	// 							style={{
-	// 								border: 0,
-	// 								background: "none",
-	// 							}}
-	// 							type="button"
-	// 						>
-	// 							<PlusOutlined />
-	// 							<div
-	// 								style={{
-	// 									marginTop: 8,
-	// 								}}
-	// 							>
-	// 								Upload
-	// 							</div>
-	// 						</button>
-	// 					</Upload>
-	// 				</Form.Item>
-	// 				<Form.Item>
-	// 					<Button htmlType="submit" type="primary">
-	// 						Criar Sala
-	// 					</Button>
-	// 				</Form.Item>
-	// 			</Form>
-	// 		</Modal>
-	// 	);
-	// }
+
 	return (
 		<Container>
-
-			{/*{isModalVisible && <ModalCreateRoom />}*/}
-			{/*onClick={() => setIsModalVisible(true)}*/}
 			<Button type="primary" onClick={() => navigate("/app/createroom")}>
 				Criar Sala
 			</Button>
@@ -264,7 +114,7 @@ export function MyRooms() {
 							}}
 							cover={<img alt="example" src={room.cover} />}
 							onClick={() => goToRoom(room.id)}
-							loading={loadingRoomInfo}
+							loading={loading}
 						>
 							<Meta title={room.name} description={room.description} />
 							<Meta

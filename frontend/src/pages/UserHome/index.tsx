@@ -14,12 +14,12 @@ export function UserHome() {
 
 	const navigate = useNavigate();
 
-
-	useEffect(() => {
-		if (!isLoggedIn) {
-			navigate("/login");
-		}
-	}, [isLoggedIn, navigate]);
+	//
+	// useEffect(() => {
+	// 	if (!isLoggedIn) {
+	// 		navigate("/login");
+	// 	}
+	// }, [isLoggedIn, navigate]);
 
 	function handleMenuClick(click: MenuInfo) {
 		const { key } = click;

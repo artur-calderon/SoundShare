@@ -15,8 +15,7 @@ export default function RoomStats() {
 
 	useEffect(() => {
 		getInfoRoom(id, user);
-	},[getInfoRoom, id, user])
-
+	},[getInfoRoom, id, user,])
 
 	return (
 			<Container>

@@ -6,7 +6,7 @@ import { ListMusic } from "lucide-react";
 import {PlaylistContainer, PlaylistItens, TitlePlaylist} from "./styles.ts";
 import {usePlaylistStore} from "../../../../contexts/PlayerContext/usePlaylistStore";
 import {usePlayerStore} from "../../../../contexts/PlayerContext/usePlayerStore";
-import {useEffect, useState} from "react";
+import {useEffect} from "react";
 import {useRoomStore} from "../../../../contexts/PlayerContext/useRoomStore";
 import {useParams} from "react-router-dom";
 
@@ -14,12 +14,13 @@ export function Playlist() {
 
 	const screens = useBreakpoint();
 
+
 	const {playlist, removeTrack} = usePlaylistStore()
 	const {playMusic} = usePlayerStore()
 	const {roomState, isHost} = useRoomStore()
 	const {id} = useParams()
 
-	const [playlistMusic, setPlaylistMusic] = useState([]);
+
 
 	// @ts-ignore
 	useEffect(() => {
@@ -29,91 +30,99 @@ export function Playlist() {
 
 	}, [roomState]);
 
-	useEffect(() => {
-		playlist.map((music) => {
-			setPlaylistMusic(music)
-		}
-		)
-	}, [playlist]);
 
-	return (
-		<PlaylistContainer
-			direction="vertical"
-		>
-			<TitlePlaylist
-				level={4}
-			>
-				<ListMusic />
-				PLAYLIST
-			</TitlePlaylist>
-			<PlaylistItens>
-				{playlist?.length > 0 ? (
-					<List
-						pagination={"bottom"}
-						itemLayout="vertical"
-						style={{ width: "auto" }}
-						size="small"
-						dataSource={roomState?.playlist}
-						renderItem={(item) => (
-							<List.Item
-								style={{
-									width: screens.xs ? "100%" : "25rem",
-									display: "flex",
+	const playlistContent = (<>
+		<TitlePlaylist level={4}>
+			<ListMusic />
+			PLAYLIST
+		</TitlePlaylist>
 
-									// borderLeft: `${highlightTheCurrentMusic(item.video.url)}`,
-								}}
-
-								actions={[
-									...(isHost ?[
-									<Tooltip title="Tocar agora" placement="top" key="play">
-										<PlayCircleOutlined
-											onClick={() => {
-												playMusic(id,item);
-											}}
-											style={{ fontSize: "20px", marginRight: "20px" ,display: isHost ? "block" : "none"}}
-										/>
-									</Tooltip>,
-									<Tooltip
-										title="Remover da Playlist"
-										placement="top"
-										key="add-to-playlist"
-									>
-										<DeleteOutlined
-											onClick={() => removeTrack(item.url)}
-											style={{ fontSize: "20px" , display: isHost ? "block" : "none"}}
-
-										/>
-									</Tooltip>,
-
-									]:[])
-								]}
-								extra={
-									<img
-										width={screens.xs ? "100%" : 100}
-										alt="logo"
-										src={item.thumbnail}
+		<PlaylistItens>
+			{playlist?.length > 0 ? (
+				<List
+					pagination={{ position: "bottom", align: "center" }}
+					itemLayout="vertical"
+					style={{ width: "100%" }}
+					size="small"
+					dataSource={roomState?.playlist}
+					renderItem={(item) => (
+						<List.Item
+							style={{
+								width: "100%",
+								display: "flex",
+								flexDirection: screens.xs ? "column" : "row",
+								alignItems: screens.xs ? "flex-start" : "center",
+								gap: "1rem",
+								padding: screens.xs ? "1rem 0" : "1rem",
+							}}
+							actions={
+								isHost
+									? [
+										<Tooltip title="Tocar agora" placement="top" key="play">
+											<PlayCircleOutlined
+												onClick={() => {
+													playMusic(id, item);
+												}}
+												style={{
+													fontSize: "20px",
+													marginRight: "20px",
+													display: isHost ? "block" : "none",
+												}}
+											/>
+										</Tooltip>,
+										<Tooltip
+											title="Remover da Playlist"
+											placement="top"
+											key="remove"
+										>
+											<DeleteOutlined
+												onClick={() => removeTrack(item.url)}
+												style={{
+													fontSize: "20px",
+													display: isHost ? "block" : "none",
+												}}
+											/>
+										</Tooltip>,
+									]
+									: []
+							}
+							extra={
+								<img
+									width={screens.xs ? "100%" : 100}
+									style={{ maxWidth: "150px", height: "auto", borderRadius: "8px" }}
+									alt="logo"
+									src={item.thumbnail}
+								/>
+							}
+						>
+							<List.Item.Meta
+								avatar={
+									<Avatar
+										src={
+											item.user?.image ||
+											"https://cdn-icons-png.flaticon.com/512/149/149071.png"
+										}
 									/>
 								}
-							>
-								<List.Item.Meta
-									avatar={
-										<Avatar
-											src={
-												item.user?.image ||
-												"https://cdn-icons-png.flaticon.com/512/149/149071.png"
-											}
-										/>
-									}
-									title={item.title}
-									description={"Enviado por: " + item.user?.name}
-								/>
-							</List.Item>
-						)}
-					></List>
-				) : (
-					<List></List>
-				)}
-			</PlaylistItens>
+								title={<div style={{ wordBreak: "break-word" }}>{item.title}</div>}
+								description={
+									<div style={{ wordBreak: "break-word" }}>
+										{"Enviado por: " + item.user?.name}
+									</div>
+								}
+							/>
+						</List.Item>
+					)}
+				/>
+			) : (
+				<List />
+			)}
+		</PlaylistItens>
+	</>)
+
+	return (
+		<PlaylistContainer direction="vertical">
+			{playlistContent}
 		</PlaylistContainer>
 	);
 }
