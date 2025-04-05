@@ -25,7 +25,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
 			const {user} = userContext.getState();
 
 			const [socket] = await Promise.all([
-				io("http://localhost:1337", {
+				io(import.meta.env.VITE_API_URL, {
 					reconnectionAttempts: 5,
 					reconnectionDelay: 5000,
 					autoConnect: true,
