@@ -24,8 +24,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
 		connect: async (roomId) => {
 			const {user} = userContext.getState();
 
-			const [socket] = await Promise.all([
-				io("/", {
+			const [socket] = await Promise.all([io(import.meta.env.VITE_API_URL, {
 					reconnectionAttempts: 5,
 					reconnectionDelay: 5000,
 					autoConnect: true,
