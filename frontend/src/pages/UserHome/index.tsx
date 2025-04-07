@@ -1,5 +1,5 @@
 
-import { Layout, Menu, Button} from "antd";
+import { Layout, Menu, Button,Drawer} from "antd";
 import {MenuInfo} from "rc-menu/lib/interface";
 
 import { menuItems } from "./menuItens.jsx";
@@ -15,13 +15,18 @@ import {mapDarkRoomThemeToStyled} from "../../styles/themes/roomThemeMapper.ts";
 
 export function UserHome() {
 	const { Content, Footer } = Layout;
-	const {signOut, user,} = userContext()
+	const {signOut, user} = userContext()
 
 	const navigate = useNavigate();
 	const screens = useBreakpoint();
 	const [menuOpen, setMenuOpen] = useState(false);
 	const mappedTheme = mapDarkRoomThemeToStyled();
-	
+	//
+	// useEffect(() => {
+	// 	if (!isLoggedIn) {
+	// 		navigate("/login");
+	// 	}
+	// }, [isLoggedIn, navigate]);
 
 	function handleMenuClick(click: MenuInfo) {
 		const { key } = click;
@@ -141,7 +146,7 @@ export function UserHome() {
 						textAlign: "center",
 					}}
 				>
-					Music Share ©{new Date().getFullYear()} Calderon Tecnologia
+					Sound Share ©{new Date().getFullYear()} Calderon Tecnologia
 				</Footer>
 			</Layout>
 		</Layout>

@@ -25,7 +25,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
 			const {user} = userContext.getState();
 
 			const [socket] = await Promise.all([
-				io("http://localhost:1337", {
+				io("/", {
 					reconnectionAttempts: 5,
 					reconnectionDelay: 5000,
 					autoConnect: true,
@@ -65,6 +65,8 @@ export const useSocketStore = create<SocketState>((set, get) => {
 				// Se não for o host e a música estiver tocando, sincroniza o progresso
 				if (!isHost && data.playing && data.played) {
 					seekTo(data.played);
+					setIsPlaying(data.playing);
+					usePlayerStore.getState().togglePlay();
 				}
 
 				setIsPlaying(data.playing);
@@ -87,6 +89,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
 		disconnect: () => {
 			const {socket} = get();
 			socket?.disconnect();
+
 			set({socket: null, connected: false});
 		},
 

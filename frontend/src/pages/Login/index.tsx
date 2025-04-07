@@ -109,7 +109,7 @@ export function Login() {
 						<div className="div-illustration">
 							<img
 								alt="signup illustration"
-								src="/Login_ILLustration.svg"
+								src="../../../public/Login_ILLustration.svg"
 								width="50%"
 							/>
 						</div>

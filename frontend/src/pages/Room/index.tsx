@@ -37,7 +37,6 @@ export function Room(){
 	const {id} = useParams();
 	const {isPlaying} = usePlayerStore();
 	const {connect } = useSocketStore()
-	const {sendHandShake} = useSocketStore();
 
 	useEffect(() => {
 		const handleOpenDrawer = () => setOpenPlaylist(true)
@@ -47,7 +46,7 @@ export function Room(){
 
 	useEffect(()=>{
 		connect(id)
-	},[connect, id, sendHandShake])
+	},[connect, id])
 
 	return(
 		<ConfigProvider theme={darkRoomTheme}>

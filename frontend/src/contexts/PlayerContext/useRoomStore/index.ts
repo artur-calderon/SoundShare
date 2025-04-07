@@ -3,6 +3,8 @@ import { talkToApi } from "../../../utils/talkToApi";
 import { db } from "../../../services/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 import {userContext} from "../../UserContext.tsx";
+import {useSocketStore} from "../useSocketStore";
+import {usePlayerStore} from "../usePlayerStore";
 
 interface RoomSpecs {
 	id?: string;
@@ -106,10 +108,10 @@ export const useRoomStore = create<RoomStore>((set,get) => {
 		},
 
 		syncRoom: () => {
-			const {socket, isHost, setPlayed, seekTo} = get();
-
+			const { isHost, setPlayed, seekTo,setPlaying} = get();
+			const {socket} = useSocketStore.getState();
 			socket?.on("updateRoom", (roomState) => {
-				const {playMusic, currentTrack, setPlaying} = usePlayerStore.getState();
+				const {playMusic, currentTrack, } = usePlayerStore.getState();
 
 				// Atualiza o estado da sala
 				get().setRoomState(roomState);

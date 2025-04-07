@@ -15,7 +15,7 @@ import useBreakpoint from "antd/es/grid/hooks/useBreakpoint.js";
 
 export function VideoPlayer() {
 	const { isPlaying, volume, mute, play, setPlayed, setDuration, setIsPlaying } = usePlayerStore();
-	const { roomState, isHost, syncRoom, played } = useRoomStore();
+	const { roomState, isHost,  played } = useRoomStore();
 	const { socket } = useSocketStore();
 	const { nextSong } = usePlaylistStore();
 
@@ -23,20 +23,15 @@ export function VideoPlayer() {
 	const { id } = useParams();
 
 	const screens = useBreakpoint();
-
-	// Sincroniza a sala apenas quando a faixa muda
+	
+	// // Sincroniza o progresso do vídeo
 	useEffect(() => {
-		if (roomState?.currentTrack) {
-			syncRoom();
+		if(play && !isHost){
+			if (played && playerRef.current) {
+				playerRef.current.seekTo(played, "fraction");
+			}
 		}
-	}, [roomState?.currentTrack, syncRoom]);
-
-	// Sincroniza o progresso do vídeo
-	useEffect(() => {
-		if (played && playerRef.current) {
-			playerRef.current.seekTo(played, "fraction");
-		}
-	}, [played]);
+	}, [play, isHost]);
 
 	// Função otimizada para emitir o progresso do vídeo
 	const handleProgress = useCallback((state: { played: number }) => {
