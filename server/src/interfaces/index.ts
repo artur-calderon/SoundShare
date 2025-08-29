@@ -9,3 +9,4 @@ export * from "./ISignUp";
 export * from "./ISocketUser";
 export * from "./ISocketUsers";
 export * from "./IVideo";
+export * from "./IChatMessage";

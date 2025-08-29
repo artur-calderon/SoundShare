@@ -1,5 +1,6 @@
 import { Server } from "socket.io";
 import { roomRepository } from "../repositories";
+import { ChatService } from "./ChatService";
 
 interface User {
   id: string;
@@ -1052,6 +1053,155 @@ export function startSocketServer(server: any) {
             syncSource: room.syncSource,
           });
         }
+      }
+    });
+
+    // ===== SISTEMA DE CHAT =====
+    
+    // Enviar mensagem de chat
+    socket.on("sendChatMessage", async (data) => {
+      try {
+        console.log("📨 Nova mensagem de chat recebida:", data);
+        
+        // Validar se usuário está na sala
+        const room = rooms[data.roomId];
+        if (!room || !room.users.has(data.userId)) {
+          socket.emit("error", { message: "Usuário não está na sala" });
+          return;
+        }
+        
+        // Salvar mensagem no Firestore
+        const message = await ChatService.sendMessage(data);
+        
+        // Emitir para todos na sala
+        io.to(data.roomId).emit("chatMessage", message);
+        
+        console.log("✅ Mensagem de chat enviada com sucesso");
+      } catch (error) {
+        console.error("❌ Erro ao enviar mensagem de chat:", error);
+        const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+        socket.emit("error", { message: errorMessage });
+      }
+    });
+
+    // Editar mensagem de chat
+    socket.on("editChatMessage", async (data) => {
+      try {
+        console.log("✏️ Edição de mensagem recebida:", data);
+        
+        // Validar se usuário está na sala
+        const room = rooms[data.roomId];
+        if (!room || !room.users.has(data.userId)) {
+          socket.emit("error", { message: "Usuário não está na sala" });
+          return;
+        }
+        
+        // Editar mensagem no Firestore
+        const updatedMessage = await ChatService.editMessage(data);
+        
+        // Emitir para todos na sala
+        io.to(data.roomId).emit("messageEdited", updatedMessage);
+        
+        console.log("✅ Mensagem editada com sucesso");
+      } catch (error) {
+        console.error("❌ Erro ao editar mensagem:", error);
+        const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+        socket.emit("error", { message: errorMessage });
+      }
+    });
+
+    // Deletar mensagem de chat
+    socket.on("deleteChatMessage", async (data) => {
+      try {
+        console.log("🗑️ Deleção de mensagem recebida:", data);
+        
+        // Validar se usuário está na sala
+        const room = rooms[data.roomId];
+        if (!room || !room.users.has(data.userId)) {
+          socket.emit("error", { message: "Usuário não está na sala" });
+          return;
+        }
+        
+        // Deletar mensagem no Firestore
+        await ChatService.deleteMessage(data);
+        
+        // Emitir para todos na sala
+        io.to(data.roomId).emit("messageDeleted", data.messageId);
+        
+        console.log("✅ Mensagem deletada com sucesso");
+      } catch (error) {
+        console.error("❌ Erro ao deletar mensagem:", error);
+        const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+        socket.emit("error", { message: errorMessage });
+      }
+    });
+
+    // Solicitar histórico de chat
+    socket.on("requestChatHistory", async (data) => {
+      try {
+        console.log("📚 Solicitação de histórico de chat recebida:", data);
+        
+        // Validar se usuário está na sala
+        const room = rooms[data.roomId];
+        if (!room) {
+          socket.emit("error", { message: "Sala não encontrada" });
+          return;
+        }
+        
+        // Buscar histórico no Firestore
+        const history = await ChatService.getChatHistory(data.roomId);
+        
+        // Enviar histórico para o usuário solicitante
+        socket.emit("chatHistory", history);
+        
+        console.log("✅ Histórico de chat enviado com sucesso");
+      } catch (error) {
+        console.error("❌ Erro ao buscar histórico de chat:", error);
+        const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+        socket.emit("error", { message: errorMessage });
+      }
+    });
+
+    // Usuário digitando
+    socket.on("userTyping", (data) => {
+      try {
+        console.log("⌨️ Usuário digitando:", data);
+        
+        // Validar se usuário está na sala
+        const room = rooms[data.roomId];
+        if (!room || !room.users.has(data.userId)) {
+          return;
+        }
+        
+        // Emitir para todos na sala (exceto o usuário que está digitando)
+        socket.to(data.roomId).emit("userTyping", {
+          userId: data.userId,
+          userName: data.userName
+        });
+        
+        console.log("✅ Evento de digitação enviado");
+      } catch (error) {
+        console.error("❌ Erro ao processar evento de digitação:", error);
+      }
+    });
+
+    // Usuário parou de digitar
+    socket.on("stopTyping", (data) => {
+      try {
+        console.log("⏹️ Usuário parou de digitar:", data);
+        
+        // Validar se usuário está na sala
+        const room = rooms[data.roomId];
+        if (!room || !room.users.has(data.userId)) {
+          return;
+        }
+        
+        // Emitir para todos na sala (exceto o usuário que parou de digitar)
+        socket.to(data.roomId).emit("userStoppedTyping", data.userId);
+        
+        return;
+      } catch (error) {
+        console.error("❌ Erro ao processar evento de parada de digitação:", error);
       }
     });
 
