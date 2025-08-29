@@ -2,8 +2,7 @@ import { cert, initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { initialize } from "fireorm";
 
-const credencials = JSON.parse(process.env.CREDENTIALS || "");
-
+const credencials = require("../credentials.json");
 
 initializeApp({
     credential: cert(credencials),

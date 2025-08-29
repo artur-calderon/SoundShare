@@ -57,8 +57,8 @@ httpServer.listen(process.env.PORT, async () => {
     startSocketServer(httpServer);
 
     /** Cria e inicia o Spotify */
-    new Spotify();
-    await Spotify.Start();
+    // new Spotify();
+    // await Spotify.Start();
 
     /** Cria e inicia o YouTube */
     new YouTube();
