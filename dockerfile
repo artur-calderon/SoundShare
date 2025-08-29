@@ -1,40 +1,82 @@
-FROM ghcr.io/railwayapp/nixpacks:ubuntu-1733184274
+# Dockerfile para SoundShare
+# Multi-stage build para otimizar o tamanho da imagem final
 
-ENTRYPOINT ["/bin/bash", "-l", "-c"]
+# ========================================
+# STAGE 1: Build do Frontend
+# ========================================
+FROM node:18-alpine AS frontend-builder
 
-WORKDIR /app/
+WORKDIR /app/frontend
 
-COPY .nixpacks/nixpkgs-5624e1334b26ddc18da37e132b6fa8e93b481468.nix .nixpacks/nixpkgs-5624e1334b26ddc18da37e132b6fa8e93b481468.nix
+# Copia os arquivos de dependências do frontend
+COPY frontend/package*.json ./
+COPY frontend/pnpm-lock.yaml ./
 
-RUN nix-env -if .nixpacks/nixpkgs-5624e1334b26ddc18da37e132b6fa8e93b481468.nix && nix-collect-garbage -d
+# Instala as dependências
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
 
-ARG CI NIXPACKS_METADATA NODE_ENV NPM_CONFIG_PRODUCTION
-ENV CI=$CI NIXPACKS_METADATA=$NIXPACKS_METADATA NODE_ENV=$NODE_ENV NPM_CONFIG_PRODUCTION=$NPM_CONFIG_PRODUCTION
+# Copia o código fonte do frontend
+COPY frontend/ ./
 
+# Build do frontend
+RUN pnpm run build
 
-# setup phase
+# ========================================
+# STAGE 2: Build do Backend
+# ========================================
+FROM node:18-alpine AS backend-builder
 
-# noop
+WORKDIR /app/server
 
-# install phase
+# Copia os arquivos de dependências do backend
+COPY server/package*.json ./
 
+# Instala as dependências
+RUN npm ci --only=production
 
-ENV NIXPACKS_PATH=/app/node_modules/.bin:$NIXPACKS_PATH
+# Copia o código fonte do backend
+COPY server/ ./
 
-UndefinedVar: Usage of undefined variable '$NIXPACKS_PATH'
+# Build do backend
+RUN npm run build
 
-COPY . /app/.
-RUN --mount=type=cache,id=dsseN16m0hM-/root/npm,target=/root/.npm npm i
+# ========================================
+# STAGE 3: Imagem Final
+# ========================================
+FROM node:18-alpine AS production
 
-# build phase
-COPY . /app/.
+# Instala dependências necessárias para o runtime
+RUN apk add --no-cache dumb-init
 
-RUN --mount=type=cache,id=dsseN16m0hM-node_modules/cache,target=/app/node_modules/.cache npm run build
+# Cria usuário não-root para segurança
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
 
-RUN printf '\nPATH=/app/node_modules/.bin:$PATH' >> /root/.profile
+WORKDIR /app
 
-# start
+# Copia o backend buildado
+COPY --from=backend-builder --chown=nodejs:nodejs /app/server/dist ./server/dist
+COPY --from=backend-builder --chown=nodejs:nodejs /app/server/package*.json ./server/
+COPY --from=backend-builder --chown=nodejs:nodejs /app/server/node_modules ./server/node_modules
 
-COPY . /app
+# Copia o frontend buildado
+COPY --from=frontend-builder --chown=nodejs:nodejs /app/frontend/dist ./frontend/dist
 
-CMD ["npm run start"]
+# Copia arquivos de configuração necessários
+COPY --chown=nodejs:nodejs server/credentials.json ./server/credentials.json
+
+# Define variáveis de ambiente padrão
+ENV NODE_ENV=production
+ENV PORT=1337
+
+# Muda para o usuário não-root
+USER nodejs
+
+# Expõe a porta
+EXPOSE 1337
+
+# Usa dumb-init para gerenciar sinais do processo
+ENTRYPOINT ["dumb-init", "--"]
+
+# Comando para iniciar o servidor
+CMD ["node", "server/dist/index.js"]

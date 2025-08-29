@@ -2,11 +2,12 @@ import { cert, initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { initialize } from "fireorm";
 
-const credencials = require("../credentials.json");
+const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS ||  "");
+
 
 initializeApp({
-    credential: cert(credencials),
-    databaseURL: `https://${credencials.project_id}.firebaseio.com`,
+    credential: cert(credentials),
+    databaseURL: `https://${credentials.project_id}.firebaseio.com`,
 });
 
 const db = getFirestore();

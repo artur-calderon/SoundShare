@@ -1,0 +1,44 @@
+# Dockerfile de desenvolvimento para SoundShare
+# Permite hot reload para desenvolvimento
+
+FROM node:18-alpine
+
+# Instala dependências necessárias
+RUN apk add --no-cache dumb-init
+
+# Cria usuário não-root para segurança
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+WORKDIR /app
+
+# Copia os arquivos de dependências
+COPY package*.json ./
+COPY frontend/package*.json ./frontend/
+COPY frontend/pnpm-lock.yaml ./frontend/
+COPY server/package*.json ./server/
+
+# Instala dependências globais e do projeto
+RUN npm install -g pnpm nodemon ts-node typescript && \
+    npm install && \
+    cd frontend && pnpm install && \
+    cd ../server && npm install
+
+# Copia o código fonte
+COPY . .
+
+# Define variáveis de ambiente para desenvolvimento
+ENV NODE_ENV=development
+ENV PORT=1337
+
+# Muda para o usuário não-root
+USER nodejs
+
+# Expõe as portas
+EXPOSE 1337 3000
+
+# Usa dumb-init para gerenciar sinais do processo
+ENTRYPOINT ["dumb-init", "--"]
+
+# Comando para desenvolvimento (pode ser sobrescrito pelo docker-compose)
+CMD ["npm", "run", "start"]
