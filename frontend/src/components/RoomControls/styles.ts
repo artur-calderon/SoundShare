@@ -2,10 +2,11 @@ import styled from 'styled-components';
 
 export const RoomControlsContainer = styled.div`
   padding: 20px;
-  background: #f8f9fa;
+  background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   margin: 20px 0;
+  border: 1px solid #e9ecef;
 
   .room-controls {
     display: flex;
@@ -118,14 +119,21 @@ export const RoomControlsContainer = styled.div`
     justify-content: space-between;
     align-items: center;
     padding: 12px;
-    background: #f8f9fa;
+    background: #ffffff;
     border-radius: 6px;
     border: 1px solid #e9ecef;
+    transition: all 0.2s;
+    
+    &:hover {
+      background: #f8f9fa;
+      border-color: #dee2e6;
+    }
   }
 
   .track-info {
     flex: 1;
     font-size: 14px;
+    color: #212529;
     
     &.current {
       font-weight: 600;
@@ -155,8 +163,10 @@ export const RoomControlsContainer = styled.div`
       }
       
       &:disabled {
-        opacity: 0.5;
+        opacity: 0.6;
         cursor: not-allowed;
+        background: #6c757d;
+        color: #ffffff;
       }
     }
     
@@ -181,9 +191,15 @@ export const RoomControlsContainer = styled.div`
     justify-content: space-between;
     align-items: center;
     padding: 12px;
-    background: #f8f9fa;
+    background: #ffffff;
     border-radius: 6px;
     border: 1px solid #e9ecef;
+    transition: all 0.2s;
+    
+    &:hover {
+      background: #f8f9fa;
+      border-color: #dee2e6;
+    }
   }
 
   .user-info {
@@ -202,6 +218,7 @@ export const RoomControlsContainer = styled.div`
   .user-name {
     font-weight: 500;
     color: #212529;
+    font-size: 14px;
   }
 
   .user-role {

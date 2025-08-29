@@ -5,6 +5,7 @@ import { doc, updateDoc } from "firebase/firestore";
 import { userContext } from "../../UserContext.tsx";
 import { usePlayerStore } from "../usePlayerStore";
 import { usePlaylistStore } from "../usePlaylistStore";
+import { useSocketStore } from "../useSocketStore";
 
 interface RoomSpecs {
 	id?: string;
@@ -189,8 +190,25 @@ export const useRoomStore = create<RoomStore>((set, get) => {
 		},
 
 		setRoomOffline: () => {
-			set({ roomOnline: false });
-			// TODO: Redirecionar usuários para fora da sala
+			set({ roomOnline: false, roomState: null });
+			
+			// ✅ NOVO: Limpar todos os estados relacionados à sala
+			// Limpar player
+			usePlayerStore.getState().setTrack(null);
+			usePlayerStore.getState().setIsPlaying(false);
+			usePlayerStore.getState().setSeekTime(0);
+			
+			// Limpar playlist
+			usePlaylistStore.getState().setPlaylist([]);
+			usePlaylistStore.getState().setCurrentIndex(0);
+			
+			// Limpar socket
+			useSocketStore.getState().disconnect();
+			
+			// ✅ NOVO: Redirecionar para /app após um pequeno delay para permitir limpeza dos estados
+			setTimeout(() => {
+				window.location.href = "/app";
+			}, 100);
 		},
 
 		seekTo: (time) => {

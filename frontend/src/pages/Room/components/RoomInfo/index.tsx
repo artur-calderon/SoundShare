@@ -3,7 +3,8 @@ import { UserOutlined, CalendarOutlined, ClockCircleOutlined, UserAddOutlined } 
 import { useRoomStore } from "../../../../contexts/PlayerContext/useRoomStore";
 import { useSocketStore } from "../../../../contexts/PlayerContext/useSocketStore";
 import { useParams } from "react-router-dom";
-import { RoomInfoContainer, RoomInfoSection, RoomInfoTitle, RoomInfoItem, MembersList, MemberItem, MemberAvatar, MemberName, OnlineStatus } from "./styles.ts";
+import { RoomInfoContainer, RoomInfoSection, RoomInfoTitle, RoomInfoItem, MembersList, MemberItem, MemberAvatar, MemberName, OnlineStatus } from "./styles";
+import RoomStats from "../RoomStats";
 
 const { Text, Title } = Typography;
 
@@ -55,50 +56,9 @@ export function RoomInfo() {
 
 	return (
 		<RoomInfoContainer>
-			{/* Informações da Sala */}
+			{/* RoomStats - Informações da Sala */}
 			<RoomInfoSection>
-				<RoomInfoTitle level={5}>Informações da Sala</RoomInfoTitle>
-				
-				<Space direction="vertical" style={{ width: "100%" }}>
-					<RoomInfoItem>
-						<Text strong style={{ fontSize: "16px" }}>
-							{roomSpecs?.name || "Carregando..."}
-						</Text>
-						<Tag 
-							color={roomState?.online ? "green" : "red"} 
-							style={{ 
-								marginLeft: "8px",
-								borderRadius: "12px",
-								padding: "2px 8px"
-							}}
-						>
-							<span style={{ 
-								display: "inline-block", 
-								width: "6px", 
-								height: "6px", 
-								background: roomState?.online ? "#52c41a" : "#ff4d4f", 
-								borderRadius: "50%", 
-								marginRight: "6px" 
-							}} />
-							{roomState?.online ? "Online" : "Offline"}
-						</Tag>
-					</RoomInfoItem>
-					
-					<RoomInfoItem>
-						<UserOutlined style={{ color: "#8c8c8c", marginRight: "8px" }} />
-						<Text type="secondary">{roomState?.listeners || 0} membros online</Text>
-					</RoomInfoItem>
-					
-					<RoomInfoItem>
-						<CalendarOutlined style={{ color: "#8c8c8c", marginRight: "8px" }} />
-						<Text type="secondary">Criada em {formatCreationDate(roomSpecs?.createdAt)}</Text>
-					</RoomInfoItem>
-					
-					<RoomInfoItem>
-						<ClockCircleOutlined style={{ color: "#8c8c8c", marginRight: "8px" }} />
-						<Text type="secondary">Última atividade: {formatLastActivity()}</Text>
-					</RoomInfoItem>
-				</Space>
+				<RoomStats />
 			</RoomInfoSection>
 
 			<Divider style={{ margin: "24px 0" }} />

@@ -5,12 +5,12 @@ const { Title } = Typography;
 
 export const RoomInfoContainer = styled.div`
 	width: 100%;
-	margin-top: 24px;
-	padding: 24px;
-	background: #fafafa;
-	border: 1px solid #f0f0f0;
-	border-radius: 12px;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+	margin-top: 0;
+	padding: 0;
+	background: transparent;
+	border: none;
+	border-radius: 0;
+	box-shadow: none;
 `;
 
 export const RoomInfoSection = styled.div`

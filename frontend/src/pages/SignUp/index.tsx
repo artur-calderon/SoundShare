@@ -185,7 +185,7 @@ function SignUp() {
 						>
 							<img
 								alt="signup illustration"
-								src="/signup%20illustration.svg"
+								src="/signup illustration.svg"
 								width="50%"
 							/>
 						</div>

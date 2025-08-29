@@ -1,4 +1,4 @@
-import { Container, InfoRoom, StatsTitle, StatItem, StatIcon, StatLabel, StatValue } from "./styles.ts";
+import { Container, InfoRoom, StatsTitle, StatItem, StatIcon, StatLabel, StatValue } from "./styles";
 import { BoomBox, Podcast, User, Shield, Crown } from "lucide-react";
 import { useEffect } from "react";
 

@@ -59,21 +59,53 @@ export const userContext = create<UserContextProps>((set)=> {
 			try {
 				const response = await signInWithEmailAndPassword(auth, email, password);
 				const userInfo = await GetUserInfo(response.user.uid);
+				
+				// Verifica se GetUserInfo retornou um erro
+				if (userInfo instanceof Error || !userInfo || !userInfo.id) {
+					throw new Error('Falha ao obter informações do usuário do backend');
+				}
+				
+				// Obtém o token de acesso
+				const accessToken = await getIdToken(response.user, true);
+				
 				set({
 					user: {
 						id: userInfo.id,
-						accessToken: response.user.accessToken,
+						accessToken: accessToken,
 						name: userInfo.name,
 						email: userInfo.email,
 						image: userInfo.image,
-						role:userInfo.role
+						role: userInfo.role
 					},
 					isLoggedIn: true,
 				});
 
-
-			}catch (e: any){
-				toast.error(e.message || 'Erro Desconhecido')
+			}catch (e: unknown){
+				// Em caso de erro, faz logout do Firebase para limpar o estado
+				try {
+					await signOut(auth);
+				} catch (signOutError) {
+					console.error('Erro ao fazer logout após falha no login:', signOutError);
+				}
+				
+				// Reseta o estado para não logado
+				set({
+					user: {
+						id: '',
+						accessToken: '',
+						name: '',
+						email: '',
+						image: '',
+						role: ''
+					},
+					isLoggedIn: false,
+				});
+				
+				if (e instanceof Error) {
+					toast.error(e.message || 'Erro Desconhecido')
+				} else {
+					toast.error('Erro Desconhecido')
+				}
 			}finally {
 				set({loginLoad: false})
 			}
@@ -88,7 +120,11 @@ export const userContext = create<UserContextProps>((set)=> {
 					window.location.href = '/login'
 				}
 			}catch (e : unknown){
-				toast.error(e.message || 'Erro Desconhecido')
+				if (e instanceof Error) {
+					toast.error(e.message || 'Erro Desconhecido')
+				} else {
+					toast.error('Erro Desconhecido')
+				}
 			}finally {
 				set({loginLoad: false})
 			}
@@ -100,21 +136,54 @@ export const userContext = create<UserContextProps>((set)=> {
 		  try {
 		    const response = await signInWithPopup(auth, provider);
 		    const userInfo = await GetUserInfo(response.user.uid);
+		    
+		    // Verifica se GetUserInfo retornou um erro
+		    if (userInfo instanceof Error || !userInfo || !userInfo.id) {
+		      throw new Error('Falha ao obter informações do usuário do backend');
+		    }
+		    
+		    // Obtém o token de acesso
+		    const accessToken = await getIdToken(response.user, true);
+		    
 		    set({
 		      user: {
 		        id: userInfo.id,
-		        accessToken: response.user.accessToken,
+		        accessToken: accessToken,
 		        name: userInfo.name,
 		        email: userInfo.email,
 		        image: userInfo.image,
-		        role:userInfo.role
+		        role: userInfo.role
 		      },
               isLoggedIn: true,
 		    });
 
 		  } catch (error) {
-			// @ts-ignore
-			  toast.error(error)
+		    // Em caso de erro, faz logout do Firebase para limpar o estado
+		    try {
+		      await signOut(auth);
+		    } catch (signOutError) {
+		      console.error('Erro ao fazer logout após falha no login:', signOutError);
+		    }
+		    
+		    // Reseta o estado para não logado
+		    set({
+		      user: {
+		        id: '',
+		        accessToken: '',
+		        name: '',
+		        email: '',
+		        image: '',
+		        role: ''
+		      },
+		      isLoggedIn: false,
+		    });
+		    
+		    // Mostra mensagem de erro apropriada
+		    if (error instanceof Error) {
+		      toast.error(error.message || 'Erro ao fazer login com Google');
+		    } else {
+		      toast.error('Erro desconhecido ao fazer login com Google');
+		    }
 		  } finally {
 		    set({ loginLoad: false });
 		  }
@@ -125,23 +194,62 @@ export const userContext = create<UserContextProps>((set)=> {
 			try{
 				onAuthStateChanged(auth, async (user) => {
 					if (user) {
-						const newToken = await getIdToken(user, true);
-						const userInfo = await GetUserInfo(user.uid);
-						set({
-							user: {
-								id: userInfo.id,
-								accessToken: newToken,
-								name: userInfo.name,
-								email: userInfo.email,
-								image: userInfo.image,
-								role: userInfo.role
-							},
-							isLoggedIn: true,
-						});
+						try {
+							const newToken = await getIdToken(user, true);
+							const userInfo = await GetUserInfo(user.uid);
+							
+							// Verifica se GetUserInfo retornou um erro
+							if (userInfo instanceof Error || !userInfo || !userInfo.id) {
+								// Se falhar, faz logout e reseta o estado
+								await signOut(auth);
+								set({
+									user: {
+										id: '',
+										accessToken: '',
+										name: '',
+										email: '',
+										image: '',
+										role: ''
+									},
+									isLoggedIn: false,
+								});
+								return;
+							}
+							
+							set({
+								user: {
+									id: userInfo.id,
+									accessToken: newToken,
+									name: userInfo.name,
+									email: userInfo.email,
+									image: userInfo.image,
+									role: userInfo.role
+								},
+								isLoggedIn: true,
+							});
+						} catch (error) {
+							// Se falhar ao obter informações, faz logout e reseta o estado
+							await signOut(auth);
+							set({
+								user: {
+									id: '',
+									accessToken: '',
+									name: '',
+									email: '',
+									image: '',
+									role: ''
+								},
+								isLoggedIn: false,
+							});
+						}
 					}
 				})
 			}catch (e){
-				toast.error(e.message || 'Erro Desconhecido')
+				if (e instanceof Error) {
+					toast.error(e.message || 'Erro Desconhecido')
+				} else {
+					toast.error('Erro Desconhecido')
+				}
 			}finally {
 				set({loginLoad: false})
 			}
@@ -156,7 +264,11 @@ export const userContext = create<UserContextProps>((set)=> {
 					}
 				)
 			}catch (e){
-				toast.error(e.message || 'Erro Desconhecido')
+				if (e instanceof Error) {
+					toast.error(e.message || 'Erro Desconhecido')
+				} else {
+					toast.error('Erro Desconhecido')
+				}
 			}finally {
 				set({loginLoad: false})
 			}

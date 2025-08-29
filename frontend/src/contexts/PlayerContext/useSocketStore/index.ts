@@ -89,6 +89,14 @@ interface SocketState {
 	kickUser: (targetUserId: string, reason?: string) => void;
 	toggleModerator: (targetUserId: string, isModerator: boolean) => void;
 	
+	// ✅ NOVO: Eventos de Chat
+	sendChatMessage: (messageData: any) => void;
+	editChatMessage: (editData: any) => void;
+	deleteChatMessage: (deleteData: any) => void;
+	requestChatHistory: (roomId: string) => void;
+	userTyping: (typingData: any) => void;
+	stopTyping: (typingData: any) => void;
+	
 	// Eventos de manutenção
 	ping: () => void;
 	
@@ -129,9 +137,30 @@ export const useSocketStore = create<SocketState>((set, get) => {
 			});
 
 			socket.on("disconnect", () => {
+				console.log(`🔌 Socket desconectado`);
 				set({ connected: false, socket: null, roomId: null, userId: null });
+				
 				// ✅ NOVO: Parar envio periódico de tempo ao desconectar
 				get().stopTimeSync();
+				
+				// ✅ NOVO: Se estava em uma sala, verificar se deve redirecionar
+				const { roomState } = useRoomStore.getState();
+				if (roomState && roomState.roomId) {
+					console.log(`⚠️ Desconectado de sala ativa - tentando reconectar...`);
+					
+					// Tentar reconectar após um delay
+					setTimeout(() => {
+						const { socket } = get();
+						if (socket && !socket.connected) {
+							console.log(`🔄 Tentando reconectar...`);
+							socket.connect();
+						} else {
+							// Se não conseguir reconectar, redirecionar para /app
+							console.log(`❌ Falha na reconexão - redirecionando para /app`);
+							window.location.href = "/app";
+						}
+					}, 3000); // Aguarda 3 segundos antes de tentar reconectar
+				}
 			});
 
 			set({ socket });
@@ -499,20 +528,70 @@ export const useSocketStore = create<SocketState>((set, get) => {
 
 			// ✅ CORREÇÃO: Sala offline - evento correto do backend
 			socket.on("roomOffline", ({ message }) => {
-				const { setRoomOffline } = useRoomStore.getState();
-				setRoomOffline();
-				console.log(`Sala offline: ${message}`);
+				console.log(`🚫 Sala offline: ${message}`);
+				
 				// ✅ NOVO: Parar envio periódico de tempo
 				get().stopTimeSync();
-				// TODO: Mostrar mensagem e redirecionar
+				
+				// ✅ NOVO: Limpar todos os estados relacionados à sala
+				const { setRoomOffline } = useRoomStore.getState();
+				const { setTrack, setIsPlaying, setSeekTime } = usePlayerStore.getState();
+				const { setPlaylist, setCurrentIndex } = usePlaylistStore.getState();
+				
+				// Limpar player
+				setTrack(null);
+				setIsPlaying(false);
+				setSeekTime(0);
+				
+				// Limpar playlist
+				setPlaylist([]);
+				setCurrentIndex(0);
+				
+				// ✅ NOVO: Chamar setRoomOffline que irá redirecionar
+				setRoomOffline();
+				
+				// ✅ NOVO: Mostrar notificação para o usuário (se disponível)
+				if (typeof window !== 'undefined' && window.Notification && Notification.permission === 'granted') {
+					new Notification('SoundShare', {
+						body: `A sala ficou offline: ${message}`,
+						icon: '/Logo Sound Share ico.svg'
+					});
+				}
 			});
 
 			// ✅ CORREÇÃO: Usuário expulso - evento correto do backend
 			socket.on("kicked", ({ reason, roomId }) => {
-				console.log(`Expulso: ${reason}`);
+				console.log(`🚫 Expulso da sala: ${reason}`);
+				
 				// ✅ NOVO: Parar envio periódico de tempo
 				get().stopTimeSync();
-				// TODO: Mostrar mensagem e sair da sala
+				
+				// ✅ NOVO: Limpar todos os estados relacionados à sala
+				const { setRoomOffline } = useRoomStore.getState();
+				const { setTrack, setIsPlaying, setSeekTime } = usePlayerStore.getState();
+				const { setPlaylist, setCurrentIndex } = usePlaylistStore.getState();
+				
+				// Limpar player
+				setTrack(null);
+				setIsPlaying(false);
+				setSeekTime(0);
+				
+				// Limpar playlist
+				setPlaylist([]);
+				setCurrentIndex(0);
+				
+				// ✅ NOVO: Mostrar notificação para o usuário (se disponível)
+				if (typeof window !== 'undefined' && window.Notification && Notification.permission === 'granted') {
+					new Notification('SoundShare', {
+						body: `Você foi expulso da sala: ${reason}`,
+						icon: '/Logo Sound Share ico.svg'
+					});
+				}
+				
+				// ✅ NOVO: Redirecionar para /app após limpar estados
+				setTimeout(() => {
+					window.location.href = "/app";
+				}, 100);
 			});
 
 			// ✅ CORREÇÃO: Usuário expulso (para outros usuários) - evento correto do backend
@@ -547,7 +626,25 @@ export const useSocketStore = create<SocketState>((set, get) => {
 
 			// ✅ CORREÇÃO: Resposta do ping - evento correto do backend
 			socket.on("pong", () => {
-				console.log("Conexão ativa");
+				console.log("✅ Conexão ativa - sala respondendo");
+			});
+			
+			// ✅ NOVO: Evento para quando o backend não responde ao ping
+			socket.on("pingTimeout", () => {
+				console.log("⚠️ Timeout no ping - sala pode estar offline");
+				
+				// Tentar reconectar uma vez
+				const { socket: currentSocket } = get();
+				if (currentSocket && !currentSocket.connected) {
+					console.log("🔄 Tentando reconectar após timeout...");
+					currentSocket.connect();
+				} else {
+					// Se não conseguir, redirecionar para /app
+					console.log("❌ Falha na reconexão após timeout - redirecionando para /app");
+					setTimeout(() => {
+						window.location.href = "/app";
+					}, 2000);
+				}
 			});
 
 			// ✅ NOVA IMPLEMENTAÇÃO: Recebe tempo atual da fonte de sincronização
@@ -567,6 +664,41 @@ export const useSocketStore = create<SocketState>((set, get) => {
 			});
 
 			// ✅ NOVA IMPLEMENTAÇÃO: Sistema de herança dinâmica
+			
+			// ✅ NOVO: Sala deletada
+			socket.on("roomDeleted", ({ message, reason }) => {
+				console.log(`🗑️ Sala deletada: ${message} - Motivo: ${reason}`);
+				
+				// ✅ NOVO: Parar envio periódico de tempo
+				get().stopTimeSync();
+				
+				// ✅ NOVO: Limpar todos os estados relacionados à sala
+				const { setRoomOffline } = useRoomStore.getState();
+				const { setTrack, setIsPlaying, setSeekTime } = usePlayerStore.getState();
+				const { setPlaylist, setCurrentIndex } = usePlaylistStore.getState();
+				
+				// Limpar player
+				setTrack(null);
+				setIsPlaying(false);
+				setSeekTime(0);
+				
+				// Limpar playlist
+				setPlaylist([]);
+				setCurrentIndex(0);
+				
+				// ✅ NOVO: Mostrar notificação para o usuário (se disponível)
+				if (typeof window !== 'undefined' && window.Notification && Notification.permission === 'granted') {
+					new Notification('SoundShare', {
+						body: `A sala foi deletada: ${message}`,
+						icon: '/Logo Sound Share ico.svg'
+					});
+				}
+				
+				// ✅ NOVO: Redirecionar para /app após limpar estados
+				setTimeout(() => {
+					window.location.href = "/app";
+				}, 100);
+			});
 			
 			// Fonte de sincronização mudou
 			socket.on("syncSourceChanged", (data) => {
@@ -656,6 +788,15 @@ export const useSocketStore = create<SocketState>((set, get) => {
 				
 				// ✅ NOVO: Parar envio periódico de tempo
 				get().stopTimeSync();
+				
+				// ✅ NOVO: Se a sala ficou vazia por muito tempo, redirecionar para /app
+				setTimeout(() => {
+					const { roomState } = useRoomStore.getState();
+					if (roomState && roomState.users.length === 0) {
+						console.log(`🏠 Sala vazia por muito tempo - redirecionando para /app`);
+						window.location.href = "/app";
+					}
+				}, 5000); // Aguarda 5 segundos antes de redirecionar
 			});
 
 			// Status de usuário mudou
@@ -742,14 +883,34 @@ export const useSocketStore = create<SocketState>((set, get) => {
 			}, 1000); // Enviar a cada segundo
 		},
 
-		// ✅ NOVO: Função para parar envio periódico de tempo
-		stopTimeSync: () => {
-			if (timeSyncInterval) {
-				clearInterval(timeSyncInterval);
-				timeSyncInterval = null;
-				console.log(`⏹️ Parado envio periódico de tempo`);
+			// ✅ NOVO: Função para parar envio periódico de tempo
+	stopTimeSync: () => {
+		if (timeSyncInterval) {
+			clearInterval(timeSyncInterval);
+			timeSyncInterval = null;
+			console.log(`⏹️ Parado envio periódico de tempo`);
+		}
+	},
+
+	// ✅ NOVO: Função para verificar periodicamente o status da sala
+	startRoomStatusCheck: () => {
+		const { socket, roomId } = get();
+		if (!socket || !roomId) return;
+		
+		// Verificar status da sala a cada 30 segundos
+		const roomStatusInterval = setInterval(() => {
+			if (socket.connected && roomId) {
+				console.log(`🔍 Verificando status da sala ${roomId}...`);
+				socket.emit("ping");
+			} else {
+				console.log(`⚠️ Socket não conectado ou sem sala - parando verificação de status`);
+				clearInterval(roomStatusInterval);
 			}
-		},
+		}, 30000); // 30 segundos
+		
+		// Retornar o intervalo para poder parar depois
+		return roomStatusInterval;
+	},
 
 		joinRoom: (roomId: string, userData: any) => {
 			const { socket, userId } = get();
@@ -770,6 +931,11 @@ export const useSocketStore = create<SocketState>((set, get) => {
 					moderators: userData.moderators
 				}
 			});
+			
+			// ✅ NOVO: Iniciar verificação periódica de status da sala
+			setTimeout(() => {
+				get().startRoomStatusCheck();
+			}, 1000); // Aguarda 1 segundo após entrar na sala
 		},
 
 		leaveRoom: () => {
@@ -966,17 +1132,69 @@ export const useSocketStore = create<SocketState>((set, get) => {
 			});
 		},
 
-		ping: () => {
-			const { socket } = get();
-			socket?.emit("ping");
-		},
+			ping: () => {
+		const { socket } = get();
+		socket?.emit("ping");
+	},
 
-		disconnect: () => {
-			const { socket } = get();
-			// ✅ NOVO: Parar envio periódico de tempo ao desconectar
-			get().stopTimeSync();
-			socket?.disconnect();
-			set({ socket: null, connected: false, roomId: null, userId: null });
-		},
+	// ✅ NOVO: Funções de Chat
+	sendChatMessage: (messageData: any) => {
+		const { socket } = get();
+		if (!socket) return;
+		
+		console.log("📤 Enviando mensagem de chat:", messageData);
+		socket.emit("sendChatMessage", messageData);
+	},
+
+	editChatMessage: (editData: any) => {
+		const { socket } = get();
+		if (!socket) return;
+		
+		console.log("✏️ Editando mensagem de chat:", editData);
+		socket.emit("editChatMessage", editData);
+	},
+
+	deleteChatMessage: (deleteData: any) => {
+		const { socket } = get();
+		if (!socket) return;
+		
+		console.log("🗑️ Deletando mensagem de chat:", deleteData);
+		socket.emit("deleteChatMessage", deleteData);
+	},
+
+	requestChatHistory: (roomId: string) => {
+		const { socket } = get();
+		if (!socket) return;
+		
+		console.log("📚 Solicitando histórico do chat para sala:", roomId);
+		socket.emit("requestChatHistory", { roomId });
+	},
+
+	userTyping: (typingData: any) => {
+		const { socket } = get();
+		if (!socket) return;
+		
+		socket.emit("userTyping", typingData);
+	},
+
+	stopTyping: (typingData: any) => {
+		const { socket } = get();
+		if (!socket) return;
+		
+		socket.emit("stopTyping", typingData);
+	},
+
+	disconnect: () => {
+		const { socket } = get();
+		// ✅ NOVO: Parar envio periódico de tempo ao desconectar
+		get().stopTimeSync();
+		
+		// ✅ NOVO: Parar verificação de status da sala
+		if (socket) {
+			socket.disconnect();
+		}
+		
+		set({ socket: null, connected: false, roomId: null, userId: null });
+	},
 	};
 });

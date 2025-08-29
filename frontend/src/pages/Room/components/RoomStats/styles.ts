@@ -2,25 +2,25 @@ import styled from "styled-components";
 
 export const Container = styled.div`
 	width: 100%;
-	margin-top: 24px;
-	padding: 24px;
-	background: #ffffff;
-	border-radius: 12px;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	margin-top: 0;
+	padding: 0;
+	background: transparent;
+	border-radius: 0;
+	box-shadow: none;
 `;
 
 export const StatsTitle = styled.h3`
-	font-size: 18px;
+	font-size: 16px;
 	font-weight: 600;
 	color: #262626;
-	margin: 0 0 20px 0;
-	text-align: center;
+	margin: 0 0 16px 0;
+	text-align: left;
 `;
 
 export const InfoRoom = styled.div`
 	display: flex;
 	flex-direction: column;
-	gap: 16px;
+	gap: 12px;
 `;
 
 export const StatItem = styled.div`

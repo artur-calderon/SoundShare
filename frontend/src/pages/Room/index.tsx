@@ -155,10 +155,13 @@ export function Room(){
 						{screens.md && (
 							<SiderContainer width="450" theme="light" style={{background: "#ffffff"}}>
 								<div style={{padding: "24px", height: "100%", overflowY: "auto", display: "flex", flexDirection: "column"}}>
-									<div style={{flex: 1, minHeight: 0}}>
+									{/* Playlist com altura flexível */}
+									<div style={{flex: 1, minHeight: "300px", maxHeight: "50%"}}>
 										<Playlist/>
 									</div>
-									<div style={{marginTop: "24px"}}>
+									
+									{/* RoomInfo com RoomStats integrado */}
+									<div style={{marginTop: "24px", flex: "0 0 auto"}}>
 										<RoomInfo/>
 									</div>
 								</div>
@@ -176,10 +179,13 @@ export function Room(){
 							width={400}
 						>
 							<div style={{padding: "24px", height: "100%", overflowY: "auto", display: "flex", flexDirection: "column"}}>
-								<div style={{flex: 1, minHeight: 0}}>
+								{/* Playlist com altura flexível */}
+								<div style={{flex: 1, minHeight: "300px", maxHeight: "50%"}}>
 									<Playlist/>
 								</div>
-								<div style={{marginTop: "24px"}}>
+								
+								{/* RoomInfo com RoomStats integrado */}
+								<div style={{marginTop: "24px", flex: "0 0 auto"}}>
 									<RoomInfo/>
 								</div>
 							</div>

@@ -4,6 +4,7 @@ import {MainLayout, MainSpace, PlayerSearchContainer, MainTitle} from "./styles.
 import { useRoomStore } from "../../../../contexts/PlayerContext/useRoomStore";
 import { Tag, Space, Row, Col } from "antd";
 import RoomStats from "../RoomStats";
+import { RoomChat } from "../RoomChat/index";
 
 export function Main() {
 	const { roomState, roomSpecs, isHost, canModerate } = useRoomStore();
@@ -12,7 +13,6 @@ export function Main() {
 		<MainLayout>
 			<MainSpace>
 				<MainTitle>
-					SoundShare {isHost ? "Admin" : canModerate ? "Moderador" : "Usuário"}
 					<Space style={{ marginLeft: "16px" }}>
 						<Tag 
 							color={roomState?.online ? "green" : "red"}
@@ -42,9 +42,9 @@ export function Main() {
 						</PlayerSearchContainer>
 					</Col>
 					
-					{/* Coluna das Informações da Sala */}
+					{/* Coluna do Chat */}
 					<Col xs={24} lg={8}>
-						<RoomStats />
+						<RoomChat />
 					</Col>
 				</Row>
 			</MainSpace>
