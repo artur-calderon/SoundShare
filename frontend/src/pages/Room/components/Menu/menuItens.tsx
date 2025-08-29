@@ -1,43 +1,68 @@
-import { House , Settings , LogOut, Heart} from 'lucide-react'
-import {defaultThemeColors} from "../../../../styles/themes/default.ts";
+import { 
+	DashboardOutlined, 
+	CustomerServiceOutlined, 
+	HeartOutlined, 
+	ClockCircleOutlined,
+	UserOutlined,
+	PlayCircleOutlined,
+	SettingOutlined,
+	LogoutOutlined
+} from '@ant-design/icons';
+import { MenuProps } from 'antd';
 
+type MenuItem = Required<MenuProps>['items'][number];
 
-export const menuItems = [
+export const menuItems: MenuItem[] = [
 	{
-		label: 'Home',
-		key: 'home',
-		icon: <House strokeWidth={1.5} size={20} color={defaultThemeColors.colors["--clr-primary-a0"]}/>,
-},
-
-{
-	label: 'Configurações',
-		key: 'ConfApp',
-	icon: <Settings strokeWidth={1.5} size={20} color={defaultThemeColors.colors["--clr-primary-a0"]}/>,
-},
-{
-	label: 'Sair',
-		key: 'sair',
-	icon: <LogOut strokeWidth={1.5}  size={20} color={defaultThemeColors.colors["--clr-primary-a0"]}/>,
-},
-{
-	label: 'Playlists',
-		key: 'playlist',
-	icon:<Heart strokeWidth={1.5} size={20} color={defaultThemeColors.colors["--clr-primary-a0"]}/>,
-	type:'group',
-		children:[
-	{
-		key:'fav1',
-		label:'Dance Music',
-		icon:<Heart strokeWidth={1.5} size={20} color={defaultThemeColors.colors["--clr-primary-a0"]}/>
-},
-	{
-		key:'fav2',
-			label:'Sertanejo',
-		icon:<Heart strokeWidth={1.5} size={20} color={defaultThemeColors.colors["--clr-primary-a0"]}/>
+		label: 'Dashboard',
+		key: 'dashboard',
+		icon: <DashboardOutlined style={{ fontSize: '18px' }} />,
 	},
-
-]
-
-}
-
-]
+	{
+		label: 'Salas de Música',
+		key: 'music-rooms',
+		icon: <CustomerServiceOutlined style={{ fontSize: '18px' }} />,
+	},
+	{
+		label: 'Favoritos',
+		key: 'favorites',
+		icon: <HeartOutlined style={{ fontSize: '18px' }} />,
+	},
+	{
+		label: 'Histórico',
+		key: 'history',
+		icon: <ClockCircleOutlined style={{ fontSize: '18px' }} />,
+	},
+	{
+		type: 'divider',
+	},
+	{
+		label: 'Gerenciamento',
+		type: 'group',
+		children: [
+			{
+				label: 'Usuários',
+				key: 'users',
+				icon: <UserOutlined style={{ fontSize: '18px' }} />,
+			},
+			{
+				label: 'Playlists',
+				key: 'playlists',
+				icon: <PlayCircleOutlined style={{ fontSize: '18px' }} />,
+			},
+			{
+				label: 'Configurações',
+				key: 'settings',
+				icon: <SettingOutlined style={{ fontSize: '18px' }} />,
+			},
+		],
+	},
+	{
+		type: 'divider',
+	},
+	{
+		label: 'Sair',
+		key: 'sair',
+		icon: <LogoutOutlined style={{ fontSize: '18px' }} />,
+	},
+];

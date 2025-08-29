@@ -1,5 +1,8 @@
+interface DurationProps {
+	seconds: number;
+}
 
-export default function Duration ({  seconds }: any) {
+export default function Duration({ seconds }: DurationProps) {
 	return (
 		<time dateTime={`P${Math.round(seconds)}S`}>
 			{format(seconds)}
@@ -7,7 +10,7 @@ export default function Duration ({  seconds }: any) {
 	)
 }
 
-function format (seconds:number) {
+function format(seconds: number) {
 	const date = new Date(seconds * 1000)
 	const hh = date.getUTCHours()
 	const mm = date.getUTCMinutes()
@@ -18,6 +21,6 @@ function format (seconds:number) {
 	return `${mm}:${ss}`
 }
 
-function pad (string:string) {
+function pad(string: number) {
 	return ('0' + string).slice(-2)
 }

@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { PlayerControlsContainer } from "./styles.ts";
 import { usePlayerStore } from "../../../../contexts/PlayerContext/usePlayerStore";
-import { Flex, Progress, Slider, Typography } from "antd";
+import { useSocketStore } from "../../../../contexts/PlayerContext/useSocketStore";
+import { usePlaylistStore } from "../../../../contexts/PlayerContext/usePlaylistStore";
+import { useRoomStore } from "../../../../contexts/PlayerContext/useRoomStore";
+import { Flex, Progress, Slider, Typography, message } from "antd";
 
 import {
 	ChevronDown,
@@ -15,21 +18,19 @@ import {
 	ListMusic
 } from "lucide-react";
 import Duration from "./Duration";
-import { usePlaylistStore } from "../../../../contexts/PlayerContext/usePlaylistStore";
-import { useRoomStore } from "../../../../contexts/PlayerContext/useRoomStore";
 
 import useBreakpoint from "antd/es/grid/hooks/useBreakpoint.js";
 
 export function PlayerControls() {
 	const { Title } = Typography;
 
-	const { isPlaying, setVolume, toggleMute, mute, togglePlay, play, duration, played, volume } = usePlayerStore();
+	const { isPlaying, setVolume, toggleMute, mute, duration, played, volume, currentTrack } = usePlayerStore();
 	const { nextSong, beforeSong } = usePlaylistStore();
-	const { roomState } = useRoomStore();
+	const { roomState, canModerate } = useRoomStore();
+	const { playPause, nextTrack, previousTrack, syncTime } = useSocketStore();
 
 	const [minimized, setMinimized] = useState(false);
 	const screens = useBreakpoint();
-
 
 	const toggleMinimize = () => setMinimized(!minimized);
 
@@ -38,6 +39,39 @@ export function PlayerControls() {
 		window.dispatchEvent(event);
 	}
 
+	// Função para controlar play/pause com verificação de permissões
+	const handlePlayPause = () => {
+		if (canModerate) {
+			playPause(!isPlaying);
+		} else {
+			message.info("Apenas donos e moderadores podem controlar a reprodução");
+		}
+	};
+
+	// Função para próxima música com verificação de permissões
+	const handleNextTrack = () => {
+		if (canModerate) {
+			nextTrack();
+		} else {
+			message.info("Apenas donos e moderadores podem controlar a reprodução");
+		}
+	};
+
+	// Função para música anterior com verificação de permissões
+	const handlePreviousTrack = () => {
+		if (canModerate) {
+			previousTrack();
+		} else {
+			message.info("Apenas donos e moderadores podem controlar a reprodução");
+		}
+	};
+
+	// Sincronizar tempo quando o usuário não for moderador
+	const handleTimeSync = (newTime: number) => {
+		if (canModerate) {
+			syncTime(newTime);
+		}
+	};
 
 	return (
 		<PlayerControlsContainer minimized={minimized}>
@@ -49,31 +83,31 @@ export function PlayerControls() {
 					<SkipBack
 						strokeWidth={1.5}
 						size={25}
-						style={{ cursor: "pointer" }}
-						onClick={beforeSong}
+						style={{ cursor: canModerate ? "pointer" : "not-allowed", opacity: canModerate ? 1 : 0.5 }}
+						onClick={handlePreviousTrack}
 					/>
 
-					{play ? (
+					{isPlaying ? (
 						<Pause
 							strokeWidth={1.5}
 							size={35}
-							style={{ cursor: "pointer" }}
-							onClick={() => togglePlay()}
+							style={{ cursor: canModerate ? "pointer" : "not-allowed", opacity: canModerate ? 1 : 0.5 }}
+							onClick={handlePlayPause}
 						/>
 					) : (
 						<Play
 							strokeWidth={1.5}
 							size={35}
-							style={{ cursor: "pointer" }}
-							onClick={() => togglePlay()}
+							style={{ cursor: canModerate ? "pointer" : "not-allowed", opacity: canModerate ? 1 : 0.5 }}
+							onClick={handlePlayPause}
 						/>
 					)}
 
 					<SkipForward
 						strokeWidth={1.5}
 						size={25}
-						style={{ cursor: "pointer" }}
-						onClick={nextSong}
+						style={{ cursor: canModerate ? "pointer" : "not-allowed", opacity: canModerate ? 1 : 0.5 }}
+						onClick={handleNextTrack}
 					/>
 
 					{!minimized && (
@@ -88,11 +122,11 @@ export function PlayerControls() {
 					<Flex gap={20} style={{ width: "60%" }} align="center" justify="center">
 						<img
 							alt="album cover"
-							src={roomState?.currentTrack?.thumbnail || ""}
+							src={currentTrack?.thumbnail || roomState?.currentTrack?.thumbnail || ""}
 						/>
 						<Flex vertical justify="flex-start" align="flex-start">
-							<Title level={5}>{roomState?.currentTrack?.title || "Sem título"}</Title>
-							<span>{roomState?.currentTrack?.description || "Sem descrição"}</span>
+							<Title level={5}>{currentTrack?.title || roomState?.currentTrack?.title || "Sem título"}</Title>
+							<span>{currentTrack?.description || roomState?.currentTrack?.description || "Sem descrição"}</span>
 						</Flex>
 					</Flex>
 				)}
@@ -123,7 +157,6 @@ export function PlayerControls() {
 					)}
 
 					{/* Botão de mudo */}
-
 					{mute ? (
 						<VolumeX strokeWidth={1.5} style={{ cursor: "pointer" }} onClick={() => toggleMute()} />
 					) : (
@@ -131,8 +164,6 @@ export function PlayerControls() {
 					)}
 
 					{/* Botão de minimizar/maximizar */}
-
-
 					{minimized ? (
 						<ChevronUp size={20} style={{ cursor: "pointer", marginLeft: "10px" }} onClick={toggleMinimize} />
 					) : (

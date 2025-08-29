@@ -1,79 +1,52 @@
 import styled from "styled-components";
-import { Flex } from "antd";
+import { Space } from "antd";
 
-export const MenuContainer = styled(Flex)`
+export const MenuContainer = styled.div`
 	height: 100%;
-	width: 100%;
-
-	// Mobile
-	@media (max-width: 768px) {
-		flex-direction: column;
-		justify-content: space-around;
-		align-items: center;
-		padding: 0.5rem 0;
-
-		.ant-menu {
-			border: none;
-			display: flex;
-			
-			flex-direction: column;
-			width: 100%;
-			justify-content: space-around;
-			background: transparent;
-			
-
-			.ant-menu-item {
-				margin-inline: 0;
-				padding: 0 1rem;
-				justify-content: center;
-				width: auto;
-
-				
-			}
-		}
-	}
-
-	// Tablet
-	//@media (max-width: 1024px) {
-	//	.ant-menu {
-	//		.ant-menu-title-content {
-	//			display: none; // opcional: esconder texto no tablet
-	//		}
-	//	}
-	//}
+	background: #000000;
+	color: #ffffff;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
 `;
 
-export const ChangeRoomToOnOff = styled(Flex)`
-	width: 100%;
-	padding: 1rem 0;
-	justify-content: center;
+export const LogoContainer = styled.div`
+	display: flex;
 	align-items: center;
-	flex-direction: row;
-	gap: 1rem;
-	display: ${(props: { ishost: string }) => (props.ishost === 'true' ? "flex" : "none")};
-
-	// Mobile
-	@media (max-width: 768px) {
-		width: auto;
-		padding: 0;
-	}
+	padding: 24px 20px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+	margin-bottom: 16px;
 `;
 
+export const LogoImage = styled.img`
+	width: 32px;
+	height: 32px;
+	margin-right: 12px;
+	background: #1890ff;
+	border-radius: 8px;
+	padding: 4px;
+`;
 
+export const LogoText = styled.div`
+	font-size: 18px;
+	font-weight: 600;
+	color: #ffffff;
+	margin-bottom: 4px;
+`;
 
-// import styled from "styled-components";
-// import {Flex} from "antd";
-//
-// export const MenuContainer = styled(Flex)`
-// 	height: 100%;
-// `
-//
-// export const ChangeRoomToOnOff = styled(Flex)`
-// 	width: 100%;
-// 	padding: 1rem 0;
-// 	justify-content: center;
-// 	align-items: center;
-// 	flex-direction: row;
-// 	gap: 1rem;
-// 	display: ${(props: { ishost: string }) => (props.ishost === 'true' ? "flex" : "none")};
-// `
+export const AdminBadge = styled.div`
+	font-size: 12px;
+	color: #8c8c8c;
+	font-weight: 500;
+`;
+
+export const ChangeRoomToOnOff = styled.div<{ ishost: string }>`
+	display: ${props => props.ishost === "true" ? "flex" : "none"};
+	align-items: center;
+	justify-content: space-between;
+	padding: 16px 20px;
+	margin-bottom: 16px;
+	background: rgba(255, 255, 255, 0.05);
+	border-radius: 8px;
+	margin: 0 20px 16px 20px;
+`;
