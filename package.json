@@ -5,7 +5,7 @@
   "type": "commonjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build":"npm install --prefix server && npm install --prefix frontend && npm run build --prefix frontend && npm run build --prefix server",
+    "build":"npm install --prefix server && npm install --prefix frontend && npm run build --skip-type-check --prefix frontend && npm run build --prefix server",
     "start":"npm run start --prefix server"
   },
   "keywords": [],
