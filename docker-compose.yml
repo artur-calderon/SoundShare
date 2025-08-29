@@ -1,91 +1,46 @@
 version: '3.8'
 
 services:
-  # Serviço principal da aplicação
-  soundshare:
+  backend:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: soundshare-app
-    ports:
-      - "1337:1337"
+      dockerfile: Dockerfile.backend
+    container_name: soundshare-backend
+    env_file:
+      - .env
     environment:
       - NODE_ENV=production
       - PORT=1337
-      # Adicione aqui suas variáveis de ambiente para APIs externas
-      # - SPOTIFY_CLIENT_ID=your_spotify_client_id
-      # - SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
-      # - YOUTUBE_API_KEY=your_youtube_api_key
-      # - FIREBASE_PROJECT_ID=your_firebase_project_id
-    volumes:
-      # Volume para persistir dados se necessário
-      - soundshare_data:/app/data
     restart: unless-stopped
     networks:
       - soundshare-network
 
-  # Serviço de desenvolvimento (opcional)
-  soundshare-dev:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    container_name: soundshare-dev
+  nginx:
+    image: nginx:alpine
+    container_name: soundshare-nginx
     ports:
-      - "3000:3000"  # Frontend dev server
-      - "1338:1337"  # Backend dev server
-    environment:
-      - NODE_ENV=development
-      - PORT=1337
+      - "80:80"
+      - "443:443"
     volumes:
-      # Bind mounts para desenvolvimento com hot reload
-      - ./frontend:/app/frontend
-      - ./server:/app/server
-      - /app/frontend/node_modules
-      - /app/server/node_modules
-    profiles:
-      - dev
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./frontend/dist:/usr/share/nginx/html
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    depends_on:
+      - backend
     networks:
       - soundshare-network
 
-  # Redis para cache e sessões (opcional)
-  redis:
-    image: redis:7-alpine
-    container_name: soundshare-redis
-    ports:
-      - "6379:6379"
+  certbot:
+    image: certbot/certbot
+    container_name: soundshare-certbot
     volumes:
-      - redis_data:/data
-    restart: unless-stopped
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: >
+      sh -c "trap exit TERM; while :; do sleep 12h & wait $${!}; certbot renew; done"
     networks:
       - soundshare-network
-    profiles:
-      - cache
-
-  # PostgreSQL para banco de dados (opcional, se quiser migrar do Firebase)
-  postgres:
-    image: postgres:15-alpine
-    container_name: soundshare-postgres
-    environment:
-      - POSTGRES_DB=soundshare
-      - POSTGRES_USER=soundshare_user
-      - POSTGRES_PASSWORD=soundshare_password
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
-    networks:
-      - soundshare-network
-    profiles:
-      - database
-
-volumes:
-  soundshare_data:
-    driver: local
-  redis_data:
-    driver: local
-  postgres_data:
-    driver: local
 
 networks:
   soundshare-network:
