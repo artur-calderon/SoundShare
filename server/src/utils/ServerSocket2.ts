@@ -1,4 +1,5 @@
 import { Server } from "socket.io";
+import { roomRepository } from "../repositories";
 
 interface User {
   id: string;
@@ -171,9 +172,13 @@ function checkUserActivity(room: RoomState, io: any) {
       });
       
       if (user.isActive) {
-        hasActiveUsers = true;
         user.lastActivity = now;
       }
+    }
+    
+    // ✅ IMPORTANTE: Contar usuários ativos independente de mudança de status
+    if (user.isActive) {
+      hasActiveUsers = true;
     }
   });
   
@@ -187,6 +192,9 @@ function checkUserActivity(room: RoomState, io: any) {
     room.lastSyncTime = 0;
     room.syncSource = null;
     
+    // ✅ Sincronizar com banco de dados
+    syncRoomOnlineStatus(room.roomId, false);
+    
     // ✅ Parar sincronização e heartbeat
     stopTimeSync(room.roomId);
     stopHeartbeat(room.roomId);
@@ -198,6 +206,13 @@ function checkUserActivity(room: RoomState, io: any) {
     });
     
     console.log(`Sala ${room.roomId} ficou offline - não há usuários ativos`);
+  } else {
+    // ✅ IMPORTANTE: Se há usuários ativos, garantir que a sala esteja online
+    if (!room.online) {
+      room.online = true;
+      syncRoomOnlineStatus(room.roomId, true);
+      console.log(`🔄 Sala ${room.roomId} reativada - usuários ativos encontrados`);
+    }
   }
 }
 
@@ -268,6 +283,20 @@ function stopHeartbeat(roomId: string) {
   }
 }
 
+// ✅ NOVO: Função para sincronizar status online com banco de dados
+async function syncRoomOnlineStatus(roomId: string, online: boolean) {
+  try {
+    const room = await roomRepository.findById(roomId);
+    if (room) {
+      room.online = online;
+      await roomRepository.update(room);
+      console.log(`🔄 Status online da sala ${roomId} sincronizado com banco: ${online}`);
+    }
+  } catch (error) {
+    console.error(`❌ Erro ao sincronizar status online da sala ${roomId}:`, error);
+  }
+}
+
 export function startSocketServer(server: any) {
   const io = new Server(server, {
     cors: {
@@ -317,6 +346,9 @@ export function startSocketServer(server: any) {
       if (isOwner && !room.online) {
         room.online = true;
         console.log(`Sala ${roomId} ativada pelo dono ${userId}`);
+        
+        // ✅ Sincronizar com banco de dados
+        syncRoomOnlineStatus(roomId, true);
         
         // ✅ Iniciar heartbeat para a sala
         startHeartbeat(roomId, io);
@@ -415,6 +447,9 @@ export function startSocketServer(server: any) {
       if (room && userId === room.owner) {
         room.online = online;
         room.lastActivity = new Date();
+        
+        // ✅ Sincronizar com banco de dados
+        syncRoomOnlineStatus(roomId, online);
         
         if (!online) {
           // ✅ Sala desativada pelo dono - parar tudo
@@ -990,6 +1025,9 @@ export function startSocketServer(server: any) {
           room.lastSyncTime = 0;
           room.syncSource = null;
           
+          // ✅ Sincronizar com banco de dados
+          syncRoomOnlineStatus(roomId, false);
+          
           // ✅ Parar sincronização e heartbeat
           stopTimeSync(roomId);
           stopHeartbeat(roomId);
@@ -1069,6 +1107,9 @@ export function startSocketServer(server: any) {
               room.trackStartTime = null;
               room.lastSyncTime = 0;
               room.syncSource = null;
+              
+              // ✅ Sincronizar com banco de dados
+              syncRoomOnlineStatus(roomId, false);
               
               // ✅ Parar sincronização e heartbeat
               stopTimeSync(roomId);
