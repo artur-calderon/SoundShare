@@ -7,10 +7,11 @@ WORKDIR /app
 
 # Copia package.json e instala dependências
 COPY server/package*.json ./
-RUN npm ci --only=production
+RUN npm install
 
 # Copia o código fonte
 COPY server/ ./
+RUN npm run build
 
 # Build do backend
 RUN npm run build

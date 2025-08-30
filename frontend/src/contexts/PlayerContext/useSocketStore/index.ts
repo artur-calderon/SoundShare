@@ -123,7 +123,8 @@ export const useSocketStore = create<SocketState>((set, get) => {
 		connect: async (roomId: string, userData: any) => {
 			const { user } = userContext.getState();
 			
-			const socket = io("http://localhost:1337", {
+			const socket = io("http://sound-share.ddns.net", {
+				path: "/socket.io",
 				reconnectionAttempts: 5,
 				reconnectionDelay: 5000,
 				autoConnect: true,

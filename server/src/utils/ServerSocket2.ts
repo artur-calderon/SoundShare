@@ -300,6 +300,7 @@ async function syncRoomOnlineStatus(roomId: string, online: boolean) {
 
 export function startSocketServer(server: any) {
   const io = new Server(server, {
+    path:"/socket.io",
     cors: {
       origin: "*",
     },
