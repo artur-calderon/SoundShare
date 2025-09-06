@@ -1,8 +1,8 @@
 import { cert, initializeApp } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { BulkWriter, getFirestore } from "firebase-admin/firestore";
 import { initialize } from "fireorm";
 
-const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS ||  "");
+const credentials = JSON.parse(Buffer.from(process.env.GOOGLE_APPLICATION_CREDENTIALS!, 'base64').toString("utf-8"));
 
 
 initializeApp({
