@@ -20,6 +20,9 @@ export const PlayerControlsContainer = styled.div<{ minimized: boolean }>`
 
   transition: all 0.3s ease;
 
+  /* ✅ CORREÇÃO: Garantir que textos e ícones sejam visíveis */
+  color: #ffffff;
+
   .ant-progress {
     width: 100%;
     margin-bottom: ${({ minimized }) => (minimized ? "0" : "0.5rem")};
@@ -30,6 +33,22 @@ export const PlayerControlsContainer = styled.div<{ minimized: boolean }>`
 
     .ant-progress-bg {
       background-color: ${({ theme }) => theme.token.colorPrimary || "#f90"};
+    }
+  }
+
+  /* ✅ CORREÇÃO: Estilos para o Slider do Ant Design */
+  .ant-slider {
+    .ant-slider-rail {
+      background-color: #444;
+    }
+    
+    .ant-slider-track {
+      background-color: #1db954;
+    }
+    
+    .ant-slider-handle {
+      border-color: #1db954;
+      background-color: #1db954;
     }
   }
 
@@ -48,6 +67,7 @@ export const PlayerControlsContainer = styled.div<{ minimized: boolean }>`
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    color: #ffffff; /* ✅ CORREÇÃO: Cor branca para visibilidade */
   }
 
   @media (max-width: 768px) {
@@ -59,10 +79,12 @@ export const PlayerControlsContainer = styled.div<{ minimized: boolean }>`
 	    display: ${({minimized}) => (minimized ? "none" : "block")};
     }
 
-    span,
-    h5 {
-      font-size: ${({ minimized }) => (minimized ? "15rem" : "0.9rem")};
-	    display: none;
+    /* ✅ CORREÇÃO: Não esconder todos os spans e h5s, apenas quando minimizado */
+    .ant-flex span,
+    .ant-flex h5 {
+      font-size: ${({ minimized }) => (minimized ? "0.75rem" : "0.9rem")};
+      display: ${({ minimized }) => (minimized ? "none" : "block")};
+      color: #ffffff; /* ✅ CORREÇÃO: Cor branca para visibilidade */
     }
   }
 `;

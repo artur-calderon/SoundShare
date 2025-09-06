@@ -123,7 +123,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
 		connect: async (roomId: string, userData: any) => {
 			const { user } = userContext.getState();
 			
-			const socket = io("http://sound-share.ddns.net", {
+			const socket = io(process.env.VITE_SOCKET_URL || "http://localhost:1337", {
 				path: "/socket.io",
 				reconnectionAttempts: 5,
 				reconnectionDelay: 5000,
@@ -325,14 +325,16 @@ export const useSocketStore = create<SocketState>((set, get) => {
 				// Atualiza o estado de reprodução
 				setIsPlaying(roomState.playing);
 
-				// ✅ CORREÇÃO: Sincroniza tempo se houver mudança significativa E música tocando
+				// ✅ CORREÇÃO: Sincroniza tempo se houver música tocando
 				if (roomState.currentTime && roomState.currentTime > 0 && roomState.playing && roomState.currentTrack) {
 					const currentState = usePlayerStore.getState();
 					if (currentState.currentTrack && currentState.currentTrack.id === roomState.currentTrack?.id) {
-						// ✅ CORREÇÃO: Só sincroniza se for a mesma música e o tempo for diferente
+						// ✅ CORREÇÃO: Sempre sincroniza para novos usuários ou se a diferença for significativa
 						const timeDifference = Math.abs(currentState.seekTime - roomState.currentTime);
-						if (timeDifference > 5) {
-							console.log(`🔄 Sincronizando tempo via updateRoom: ${Math.floor(roomState.currentTime / 60)}:${(roomState.currentTime % 60).toString().padStart(2, '0')}`);
+						const shouldSync = timeDifference > 5 || currentState.seekTime === 0; // ✅ NOVO: Sincroniza se seekTime é 0 (novo usuário)
+						
+						if (shouldSync) {
+							console.log(`🔄 Sincronizando tempo via updateRoom: ${Math.floor(roomState.currentTime / 60)}:${(roomState.currentTime % 60).toString().padStart(2, '0')} (diferença: ${timeDifference}s)`);
 							
 							// ✅ CORREÇÃO: Emite evento para sincronização se houver fonte ativa
 							if (roomState.syncSource?.isActive) {
@@ -423,12 +425,34 @@ export const useSocketStore = create<SocketState>((set, get) => {
 			// ✅ CORREÇÃO: Estado de reprodução alterado - evento correto do backend
 			socket.on("playbackStateChanged", ({ playing, currentTime }) => {
 				const { setIsPlaying } = usePlayerStore.getState();
-				setIsPlaying(playing);
-				console.log(`Reprodução: ${playing ? 'play' : 'pause'}, tempo: ${currentTime}`);
+				const { setRoomState } = useRoomStore.getState();
 				
-				// ✅ NOVO: Reset da flag de sincronização quando há mudança de estado
+				console.log(`🎮 playbackStateChanged recebido: ${playing ? 'play' : 'pause'}, tempo: ${currentTime}`);
+				
+				// ✅ CORREÇÃO: Atualiza o estado local imediatamente
+				setIsPlaying(playing);
+				
+				// ✅ CORREÇÃO: Atualiza também o estado da sala
+				const currentRoomState = useRoomStore.getState().roomState;
+				if (currentRoomState) {
+					setRoomState({
+						...currentRoomState,
+						playing: playing,
+						currentTime: currentTime || currentRoomState.currentTime
+					});
+				}
+				
+				// ✅ CORREÇÃO: Reset da flag de sincronização apenas para novos usuários
 				// Isso permite que novos usuários sincronizem quando o host der play/pause
-				hasInitialSync = false;
+				// Mas não impede usuários existentes de sincronizarem
+				if (get().userId && get().roomId) {
+					const { roomState } = useRoomStore.getState();
+					const isNewUser = roomState?.users?.some(user => user.id === get().userId && user.joinedAt > new Date(Date.now() - 10000)); // Usuário que entrou nos últimos 10 segundos
+					if (isNewUser) {
+						hasInitialSync = false;
+						console.log(`🆕 Novo usuário detectado - resetando flag de sincronização`);
+					}
+				}
 				
 				// ✅ NOVO: Iniciar/parar envio periódico de tempo baseado no estado de reprodução
 				if (playing) {
@@ -446,23 +470,21 @@ export const useSocketStore = create<SocketState>((set, get) => {
 				if (currentTrack && currentTrack.id === trackId) {
 					console.log(`🔄 TimeSync recebido: ${currentTime}s para música ${trackId} (fonte: ${source})`);
 					
-					// ✅ NOVO: Só sincroniza automaticamente se NÃO foi sincronizado inicialmente
-					// Isso evita repetições constantes, mas permite sincronização quando necessário
-					if (!hasInitialSync) {
-						const { roomState } = useRoomStore.getState();
-						const isHost = roomState?.syncSource?.userId === get().userId;
-						
-						if (!isHost) {
-							console.log(`🎯 Usuário não-host recebeu timeSync - sincronizando automaticamente (primeira vez)`);
-							hasInitialSync = true;
-							window.dispatchEvent(new CustomEvent('syncWithSource', {
-								detail: { 
-									currentTime: currentTime,
-									trackId: trackId,
-									syncSource: syncSource
-								}
-							}));
-						}
+					// ✅ CORREÇÃO: Sempre sincroniza para novos usuários ou se não foi sincronizado
+					const { roomState } = useRoomStore.getState();
+					const isHost = roomState?.syncSource?.userId === get().userId;
+					const isNewUser = roomState?.users?.some(user => user.id === get().userId && user.joinedAt > new Date(Date.now() - 10000)); // Usuário que entrou nos últimos 10 segundos
+					
+					if (!isHost && (!hasInitialSync || isNewUser)) {
+						console.log(`🎯 Usuário não-host recebeu timeSync - sincronizando automaticamente (${isNewUser ? 'novo usuário' : 'primeira vez'})`);
+						hasInitialSync = true;
+						window.dispatchEvent(new CustomEvent('syncWithSource', {
+							detail: { 
+								currentTime: currentTime,
+								trackId: trackId,
+								syncSource: syncSource
+							}
+						}));
 					} else {
 						console.log(`ℹ️ TimeSync recebido - usuário já sincronizado inicialmente, não sincronizando automaticamente`);
 					}

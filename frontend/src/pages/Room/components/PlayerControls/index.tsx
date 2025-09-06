@@ -25,9 +25,8 @@ export function PlayerControls() {
 	const { Title } = Typography;
 
 	const { isPlaying, setVolume, toggleMute, mute, duration, played, volume, currentTrack } = usePlayerStore();
-	const { nextSong, beforeSong } = usePlaylistStore();
 	const { roomState, canModerate } = useRoomStore();
-	const { playPause, nextTrack, previousTrack, syncTime } = useSocketStore();
+	const { playPause, nextTrack, previousTrack } = useSocketStore();
 
 	const [minimized, setMinimized] = useState(false);
 	const screens = useBreakpoint();
@@ -66,12 +65,34 @@ export function PlayerControls() {
 		}
 	};
 
-	// Sincronizar tempo quando o usuário não for moderador
-	const handleTimeSync = (newTime: number) => {
-		if (canModerate) {
-			syncTime(newTime);
-		}
-	};
+
+
+	// ✅ NOVO: Se não há música atual, não renderiza nada
+	if (!currentTrack && !roomState?.currentTrack) {
+		return null;
+	}
+
+	// ✅ NOVO: Se está minimizado, mostra apenas a arrow para expandir
+	if (minimized) {
+		return (
+			<PlayerControlsContainer minimized={true}>
+				<Flex justify="center" align="center" style={{ padding: "8px" }}>
+					<ChevronUp 
+						size={20} 
+						style={{ 
+							cursor: "pointer", 
+							color: "#ffffff",
+							backgroundColor: "rgba(255,255,255,0.2)", // ✅ CORREÇÃO: Fundo mais claro para visibilidade
+							padding: "8px",
+							borderRadius: "50%",
+							border: "1px solid rgba(255,255,255,0.3)" // ✅ CORREÇÃO: Borda sutil para contraste
+						}} 
+						onClick={toggleMinimize} 
+					/>
+				</Flex>
+			</PlayerControlsContainer>
+		);
+	}
 
 	return (
 		<PlayerControlsContainer minimized={minimized}>
@@ -83,7 +104,11 @@ export function PlayerControls() {
 					<SkipBack
 						strokeWidth={1.5}
 						size={25}
-						style={{ cursor: canModerate ? "pointer" : "not-allowed", opacity: canModerate ? 1 : 0.5 }}
+						style={{ 
+							cursor: canModerate ? "pointer" : "not-allowed", 
+							opacity: canModerate ? 1 : 0.5,
+							color: "#ffffff"
+						}}
 						onClick={handlePreviousTrack}
 					/>
 
@@ -91,14 +116,22 @@ export function PlayerControls() {
 						<Pause
 							strokeWidth={1.5}
 							size={35}
-							style={{ cursor: canModerate ? "pointer" : "not-allowed", opacity: canModerate ? 1 : 0.5 }}
+							style={{ 
+								cursor: canModerate ? "pointer" : "not-allowed", 
+								opacity: canModerate ? 1 : 0.5,
+								color: "#1db954"
+							}}
 							onClick={handlePlayPause}
 						/>
 					) : (
 						<Play
 							strokeWidth={1.5}
 							size={35}
-							style={{ cursor: canModerate ? "pointer" : "not-allowed", opacity: canModerate ? 1 : 0.5 }}
+							style={{ 
+								cursor: canModerate ? "pointer" : "not-allowed", 
+								opacity: canModerate ? 1 : 0.5,
+								color: "#1db954"
+							}}
 							onClick={handlePlayPause}
 						/>
 					)}
@@ -106,12 +139,19 @@ export function PlayerControls() {
 					<SkipForward
 						strokeWidth={1.5}
 						size={25}
-						style={{ cursor: canModerate ? "pointer" : "not-allowed", opacity: canModerate ? 1 : 0.5 }}
+						style={{ 
+							cursor: canModerate ? "pointer" : "not-allowed", 
+							opacity: canModerate ? 1 : 0.5,
+							color: "#ffffff"
+						}}
 						onClick={handleNextTrack}
 					/>
 
 					{!minimized && (
-						<span style={{ width: "7rem" }}>
+						<span style={{ 
+							width: "7rem",
+							color: "#ffffff"
+						}}>
 							<Duration seconds={duration * played} /> / <Duration seconds={duration} />
 						</span>
 					)}
@@ -125,15 +165,26 @@ export function PlayerControls() {
 							src={currentTrack?.thumbnail || roomState?.currentTrack?.thumbnail || ""}
 						/>
 						<Flex vertical justify="flex-start" align="flex-start">
-							<Title level={5}>{currentTrack?.title || roomState?.currentTrack?.title || "Sem título"}</Title>
-							<span>{currentTrack?.description || roomState?.currentTrack?.description || "Sem descrição"}</span>
+							<Title level={5} style={{ color: "#ffffff", margin: 0 }}>
+								{currentTrack?.title || roomState?.currentTrack?.title || "Sem título"}
+							</Title>
+							<span style={{ 
+								color: "#e0e0e0",
+								fontSize: "12px",
+								maxWidth: "300px",
+								overflow: "hidden",
+								textOverflow: "ellipsis",
+								whiteSpace: "nowrap"
+							}}>
+								{currentTrack?.description || roomState?.currentTrack?.description || "Sem descrição"}
+							</span>
 						</Flex>
 					</Flex>
 				)}
 
 				{/* Controle de volume */}
 				<Flex style={{ width: "20%" }} align="center" justify="center" gap={15}>
-					{!minimized && <span>Volume</span>}
+					{!minimized && <span style={{ color: "#ffffff" }}>Volume</span>}
 
 					{screens.md && !minimized && (
 						<Slider
@@ -151,24 +202,46 @@ export function PlayerControls() {
 						<ListMusic
 							strokeWidth={1.5}
 							size={30}
-							style={{ cursor: "pointer" }}
+							style={{ 
+								cursor: "pointer",
+								color: "#ffffff"
+							}}
 							onClick={openPlaylist}
 						/>
 					)}
 
 					{/* Botão de mudo */}
 					{mute ? (
-						<VolumeX strokeWidth={1.5} style={{ cursor: "pointer" }} onClick={() => toggleMute()} />
+						<VolumeX 
+							strokeWidth={1.5} 
+							style={{ 
+								cursor: "pointer",
+								color: "#ffffff"
+							}} 
+							onClick={() => toggleMute()} 
+						/>
 					) : (
-						<Volume2 strokeWidth={1.5} style={{ cursor: "pointer" }} onClick={() => toggleMute()} size={minimized ? 25 : 25} />
+						<Volume2 
+							strokeWidth={1.5} 
+							style={{ 
+								cursor: "pointer",
+								color: "#ffffff"
+							}} 
+							onClick={() => toggleMute()} 
+							size={25} 
+						/>
 					)}
 
-					{/* Botão de minimizar/maximizar */}
-					{minimized ? (
-						<ChevronUp size={20} style={{ cursor: "pointer", marginLeft: "10px" }} onClick={toggleMinimize} />
-					) : (
-						<ChevronDown size={20} style={{ cursor: "pointer", marginLeft: "10px" }} onClick={toggleMinimize} />
-					)}
+					{/* Botão de minimizar */}
+					<ChevronDown 
+						size={20} 
+						style={{ 
+							cursor: "pointer", 
+							marginLeft: "10px",
+							color: "#ffffff"
+						}} 
+						onClick={toggleMinimize} 
+					/>
 				</Flex>
 			</Flex>
 		</PlayerControlsContainer>

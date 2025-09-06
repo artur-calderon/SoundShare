@@ -33,7 +33,7 @@ export function Room(){
 
 	const variantsControls: Variants = {
 		show: { position: "fixed" as const, y: -2, display: "flex", width: "100%" },
-		closed: { position: "relative" as const, y: 0, display: "none", width: "100%" },
+		closed: { position: "relative" as const, y: 0, display: "flex", width: "100%" },
 	};
 	
 	const {id} = useParams();
@@ -139,13 +139,14 @@ export function Room(){
 							{/* Controles do player */}
 							<motion.div
 								initial={{
-									y: 200,
-									display: "none",
+									y: 0,
+									display: "flex",
 									position: "relative" as const,
 									zIndex: 2,
 								}}
-								animate={isPlaying ? "show" : "closed"}
+								animate={(roomState?.currentTrack) ? "show" : "closed"}
 								variants={variantsControls}
+								transition={{ duration: 0.3, ease: "easeInOut" }}
 							>
 								<PlayerControls/>
 							</motion.div>

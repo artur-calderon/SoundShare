@@ -122,6 +122,12 @@ export function VideoPlayer() {
 			}
 		};
 
+		// ✅ NOVO: Listener para forçar reprodução após delay
+		const handleForcePlay = () => {
+			console.log(`🎵 Evento forcePlay recebido - forçando reprodução`);
+			setIsPlaying(true);
+		};
+
 		// Listener para mudança de fonte de sincronização
 		const handleSyncSourceChanged = (event: CustomEvent) => {
 			const { newSource, previousSource, reason } = event.detail;
@@ -147,12 +153,14 @@ export function VideoPlayer() {
 
 		// Adiciona listeners para o sistema de herança dinâmica
 		window.addEventListener('syncWithSource', handleSyncWithSource as EventListener);
+		window.addEventListener('forcePlay', handleForcePlay as EventListener);
 		window.addEventListener('syncSourceChanged', handleSyncSourceChanged as EventListener);
 		window.addEventListener('roomEmpty', handleRoomEmpty as EventListener);
 
 		// Cleanup
 		return () => {
 			window.removeEventListener('syncWithSource', handleSyncWithSource as EventListener);
+			window.removeEventListener('forcePlay', handleForcePlay as EventListener);
 			window.removeEventListener('syncSourceChanged', handleSyncSourceChanged as EventListener);
 			window.removeEventListener('roomEmpty', handleRoomEmpty as EventListener);
 		};
@@ -164,12 +172,11 @@ export function VideoPlayer() {
 	// Função para tocar/pausar
 	const handlePlayPause = useCallback(() => {
 		if (canModerate) {
-			// Atualiza o estado local imediatamente para feedback visual
-			setIsPlaying(!isPlaying);
-			// Envia para o socket
+			// ✅ CORREÇÃO: Não atualiza o estado local - deixa o socket controlar
+			// Envia apenas para o socket
 			playPause(!isPlaying);
 		}
-	}, [canModerate, isPlaying, setIsPlaying, playPause]);
+	}, [canModerate, isPlaying, playPause]);
 
 	// Função para próxima música
 	const handleNextTrack = useCallback(() => {
