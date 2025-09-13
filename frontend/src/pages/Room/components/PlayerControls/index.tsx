@@ -75,7 +75,7 @@ export function PlayerControls() {
 	// ✅ NOVO: Se está minimizado, mostra apenas a arrow para expandir
 	if (minimized) {
 		return (
-			<PlayerControlsContainer minimized={true}>
+			<PlayerControlsContainer $minimized={true}>
 				<Flex justify="center" align="center" style={{ padding: "8px" }}>
 					<ChevronUp 
 						size={20} 
@@ -95,7 +95,7 @@ export function PlayerControls() {
 	}
 
 	return (
-		<PlayerControlsContainer minimized={minimized}>
+		<PlayerControlsContainer $minimized={minimized}>
 			{isPlaying && <Progress percent={played * 100} status="active" showInfo={false} />}
 
 			<Flex align="center" justify="space-between">

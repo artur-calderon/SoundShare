@@ -66,6 +66,17 @@ export const darkRoomTheme : ThemeType = {
 		},
 		Progress:{
 			defaultColor:defaultThemeColors.colors["--clr-primary-a40"]
+		},
+		Tooltip: {
+			colorBgSpotlight: defaultThemeColors.colors["--clr-surface-a0"],
+			colorTextLightSolid: defaultThemeColors.colors["--clr-light-a0"],
+			colorBorder: defaultThemeColors.colors["--clr-surface-a30"],
+			borderRadius: 6,
+			fontSize: 12
+		},
+		Typography: {
+			colorTextSecondary: defaultThemeColors.colors["--clr-surface-a50"],
+			colorText: defaultThemeColors.colors["--clr-light-a0"]
 		}
 	}
 };

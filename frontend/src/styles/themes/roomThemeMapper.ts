@@ -22,5 +22,7 @@ export const mapDarkRoomThemeToStyled = () => ({
 		Input: darkRoomTheme.components.Input,
 		Progress: darkRoomTheme.components.Progress,
 		Content: darkRoomTheme.components.Content,
+		Tooltip: darkRoomTheme.components.Tooltip,
+		Typography: darkRoomTheme.components.Typography,
 	}
 });

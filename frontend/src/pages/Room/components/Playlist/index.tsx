@@ -223,13 +223,13 @@ export function Playlist() {
 									description={
 										<div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
 											<Text 
-												type="secondary" 
 												style={{ 
 													fontSize: "12px",
 													overflow: "hidden",
 													textOverflow: "ellipsis",
 													whiteSpace: "nowrap",
-													maxWidth: screens.xs ? "150px" : "200px"
+													maxWidth: screens.xs ? "150px" : "200px",
+													color: "#666666"
 												}}
 											>
 												Enviado por: {item.user?.name}
