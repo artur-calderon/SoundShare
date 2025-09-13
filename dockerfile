@@ -5,6 +5,7 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+COPY server/Credentials.json ./
 # Copia package.json e instala dependências
 COPY server/package*.json ./
 RUN npm install
