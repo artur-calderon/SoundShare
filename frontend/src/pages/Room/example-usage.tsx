@@ -113,8 +113,8 @@ export const RoomPageExample: React.FC<RoomPageProps> = ({ roomId }) => {
 
 			{/* Playlist */}
 			<div className="playlist-section">
-				<h3>Playlist ({playlist.length} músicas)</h3>
-				{playlist.length > 0 ? (
+				<h3>Playlist ({playlist?.length || 0} músicas)</h3>
+				{playlist?.length > 0 ? (
 					<div className="playlist">
 						{playlist.map((track, index) => (
 							<div 

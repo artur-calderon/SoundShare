@@ -40,8 +40,8 @@ export const AdminBadge = styled.div`
 	font-weight: 500;
 `;
 
-export const ChangeRoomToOnOff = styled.div<{ ishost: string }>`
-	display: ${props => props.ishost === "true" ? "flex" : "none"};
+export const ChangeRoomToOnOff = styled.div<{ $ishost: string }>`
+	display: ${props => props.$ishost === "true" ? "flex" : "none"};
 	align-items: center;
 	justify-content: space-between;
 	padding: 16px 20px;

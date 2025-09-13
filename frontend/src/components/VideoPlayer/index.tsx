@@ -5,24 +5,25 @@ import Marquee from "react-fast-marquee";
 import ReactPlayer from "react-player/lazy";
 import { CustomerServiceOutlined } from "@ant-design/icons";
 import { usePlayerStore } from "../../contexts/PlayerContext/usePlayerStore";
-import { usePlaylistStore } from "../../contexts/PlayerContext/usePlaylistStore";
+import { useSocketStore } from "../../contexts/PlayerContext/useSocketStore";
 import { useRoomStore } from "../../contexts/PlayerContext/useRoomStore";
 import { useEffect, useRef, useCallback } from "react";
-import { useSocketStore } from "../../contexts/PlayerContext/useSocketStore";
 import { useParams } from "react-router-dom";
 
-import useBreakpoint from "antd/es/grid/hooks/useBreakpoint.js";
 
 export function VideoPlayer() {
-	const { isPlaying, volume, mute, play, setPlayed, setDuration, setIsPlaying, currentTrack } = usePlayerStore();
-	const { roomState, isHost, canModerate } = useRoomStore();
-	const { socket, playPause, nextTrack, previousTrack, syncTrack } = useSocketStore();
-	const { nextSong, beforeSong, playlist, currentIndex } = usePlaylistStore();
+	// ✅ OTIMIZAÇÃO: Usar seletores específicos para evitar re-renders desnecessários
+	const { isPlaying, volume, mute, setPlayed, setDuration, setIsPlaying, currentTrack } = usePlayerStore();
+	const { playPause, nextTrack, previousTrack, syncTrack } = useSocketStore();
+	const { roomState } = useRoomStore();
+	
+	const canModerate = roomState?.canModerate || false;
+	const playlistTracks = roomState?.playlist || [];
+	
+	const currentIndex = playlistTracks.findIndex((t: any) => t.id === currentTrack?.id);
 
 	const playerRef = useRef<ReactPlayer>(null);
 	const { id } = useParams();
-
-	const screens = useBreakpoint();
 
 	// Função otimizada para emitir o progresso do vídeo
 	const handleProgress = useCallback((state: { played: number }) => {
@@ -44,62 +45,23 @@ export function VideoPlayer() {
 		}
 	}, [canModerate, syncTrack, id, setPlayed]);
 
-	// Atualiza o estado de reprodução apenas se houver mudança
-	useEffect(() => {
-		if (roomState?.playing !== undefined && roomState.playing !== isPlaying) {
-			setIsPlaying(roomState.playing);
-		}
-	}, [roomState?.playing, isPlaying, setIsPlaying]);
-
-	// ✅ NOVA IMPLEMENTAÇÃO: Sincronização visual com fonte de sincronização
-	useEffect(() => {
-		if (roomState?.currentTime && roomState?.currentTrack && playerRef.current) {
-			// Converte segundos para porcentagem baseado na duração
-			const duration = playerRef.current.getDuration();
-			if (duration > 0) {
-				const seekPercentage = roomState.currentTime / duration;
-				
-				// ✅ CORREÇÃO: Sempre atualiza visual se houver tempo, independente da fonte
-				if (roomState.currentTime > 0) {
-					console.log(`🔄 Atualizando estado visual: ${Math.floor(roomState.currentTime / 60)}:${(roomState.currentTime % 60).toString().padStart(2, '0')} (${Math.floor(seekPercentage * 100)}%)`);
-					
-					// Atualiza apenas o estado local (sem interferir no player)
-					setPlayed(seekPercentage);
-				}
-			} else {
-				console.warn(`⚠️ Duração do player não disponível para sincronização visual`);
-			}
-		}
-	}, [roomState?.currentTime, roomState?.currentTrack, setPlayed]);
-
-	// ✅ NOVA IMPLEMENTAÇÃO: Sincronização quando a música muda
-	useEffect(() => {
-		if (roomState?.currentTrack && playerRef.current) {
-			// Quando a música muda, sincroniza o tempo se houver
-			if (roomState.currentTime && roomState.currentTime > 0) {
-				const duration = playerRef.current.getDuration();
-				if (duration > 0) {
-					const seekPercentage = roomState.currentTime / duration;
-					setPlayed(seekPercentage);
-					console.log(`🎵 Nova música sincronizada: ${roomState.currentTrack.title} no tempo ${Math.floor(roomState.currentTime / 60)}:${(roomState.currentTime % 60).toString().padStart(2, '0')} (${Math.floor(seekPercentage * 100)}%)`);
-				} else {
-					console.warn(`⚠️ Duração não disponível para nova música: ${roomState.currentTrack.title}`);
-				}
-			} else {
-				// Se não há tempo específico, volta para o início
-				setPlayed(0);
-				console.log(`🎵 Nova música sem tempo específico - começando do início: ${roomState.currentTrack.title}`);
-			}
-		}
-	}, [roomState?.currentTrack, roomState?.currentTime, setPlayed]);
+	// ✅ OTIMIZAÇÃO: Removido - sincronização agora é feita via eventos customizados
 
 	// ✅ NOVA IMPLEMENTAÇÃO: Sistema de herança dinâmica para sincronização
 	useEffect(() => {
 		// Listener para sincronização com fonte ativa
 		const handleSyncWithSource = (event: CustomEvent) => {
-			const { currentTime, trackId, syncSource } = event.detail;
+			const { currentTime, syncSource, trackId } = event.detail;
 			
-			if (playerRef.current && currentTime > 0) {
+			console.log(`🎯 EVENTO syncWithSource recebido:`, { currentTime, syncSource, trackId });
+			
+			// ✅ CORREÇÃO: Verificar se é a música atual
+			if (currentTrack && trackId && currentTrack.id !== trackId) {
+				console.log(`⚠️ Música diferente - ignorando sincronização. Atual: ${currentTrack.id}, Recebida: ${trackId}`);
+				return;
+			}
+			
+			if (playerRef.current && currentTime >= 0) {
 				const sourceInfo = syncSource ? `${syncSource.userRole} ${syncSource.userId}` : 'sem fonte específica';
 				console.log(`🎯 SINCRONIZAÇÃO: ${sourceInfo} - Tempo: ${Math.floor(currentTime / 60)}:${(currentTime % 60).toString().padStart(2, '0')}`);
 				
@@ -119,6 +81,46 @@ export function VideoPlayer() {
 				}
 				
 				console.log(`✅ Sincronização concluída`);
+			} else {
+				console.log(`⚠️ Player não disponível ou tempo inválido:`, { 
+					hasPlayer: !!playerRef.current, 
+					currentTime 
+				});
+			}
+		};
+
+		// ✅ REMOVIDO: Listeners do Event Bus desnecessários
+
+		// ✅ NOVO: Listener para sincronização inteligente
+		const handleSmartSync = (event: CustomEvent) => {
+			const { currentTime, syncSource, threshold } = event.detail;
+			
+			if (playerRef.current && currentTime > 0) {
+				// Obter tempo atual do player
+				const playerCurrentTime = playerRef.current.getCurrentTime();
+				const timeDifference = Math.abs(playerCurrentTime - currentTime);
+				
+				console.log(`🧠 SmartSync: Diferença de tempo: ${timeDifference.toFixed(2)}s (threshold: ${threshold}s)`);
+				
+				// Só sincroniza se a diferença for maior que o threshold
+				if (timeDifference > threshold) {
+					const sourceInfo = syncSource ? `${syncSource.userRole} ${syncSource.userId}` : 'sem fonte específica';
+					console.log(`🎯 SINCRONIZAÇÃO INTELIGENTE: ${sourceInfo} - Tempo: ${Math.floor(currentTime / 60)}:${(currentTime % 60).toString().padStart(2, '0')} (diferença: ${timeDifference.toFixed(2)}s)`);
+					
+					// Sincronizar com o tempo correto
+					playerRef.current.seekTo(currentTime);
+					
+					// Atualiza estado local
+					const duration = playerRef.current.getDuration();
+					if (duration > 0) {
+						const seekPercentage = currentTime / duration;
+						setPlayed(seekPercentage);
+					}
+					
+					console.log(`✅ Sincronização inteligente concluída`);
+				} else {
+					console.log(`ℹ️ Diferença muito pequena (${timeDifference.toFixed(2)}s) - não sincronizando`);
+				}
 			}
 		};
 
@@ -153,21 +155,27 @@ export function VideoPlayer() {
 
 		// Adiciona listeners para o sistema de herança dinâmica
 		window.addEventListener('syncWithSource', handleSyncWithSource as EventListener);
+		window.addEventListener('smartSync', handleSmartSync as EventListener);
 		window.addEventListener('forcePlay', handleForcePlay as EventListener);
 		window.addEventListener('syncSourceChanged', handleSyncSourceChanged as EventListener);
 		window.addEventListener('roomEmpty', handleRoomEmpty as EventListener);
 
+		// ✅ REMOVIDO: Listeners do Event Bus desnecessários
+
 		// Cleanup
 		return () => {
 			window.removeEventListener('syncWithSource', handleSyncWithSource as EventListener);
+			window.removeEventListener('smartSync', handleSmartSync as EventListener);
 			window.removeEventListener('forcePlay', handleForcePlay as EventListener);
 			window.removeEventListener('syncSourceChanged', handleSyncSourceChanged as EventListener);
 			window.removeEventListener('roomEmpty', handleRoomEmpty as EventListener);
+			
+			// ✅ REMOVIDO: Cleanup do Event Bus desnecessário
 		};
 	}, [canModerate, syncTrack, setPlayed, setIsPlaying]);
 
-	// Determina qual música mostrar (prioriza o currentTrack local)
-	const displayTrack = currentTrack || roomState?.currentTrack;
+	// ✅ OTIMIZAÇÃO: Usar apenas currentTrack do player store
+	const displayTrack = currentTrack;
 
 	// Função para tocar/pausar
 	const handlePlayPause = useCallback(() => {
@@ -180,17 +188,17 @@ export function VideoPlayer() {
 
 	// Função para próxima música
 	const handleNextTrack = useCallback(() => {
-		if (canModerate && playlist.length > 0) {
+		if (canModerate && playlistTracks.length > 0) {
 			nextTrack();
 		}
-	}, [canModerate, playlist.length, nextTrack]);
+	}, [canModerate, playlistTracks.length, nextTrack]);
 
 	// Função para música anterior
 	const handlePreviousTrack = useCallback(() => {
-		if (canModerate && playlist.length > 0) {
+		if (canModerate && playlistTracks.length > 0) {
 			previousTrack();
 		}
-	}, [canModerate, playlist.length, previousTrack]);
+	}, [canModerate, playlistTracks.length, previousTrack]);
 
 	return (
 		<SpaceContainer direction="vertical">
@@ -233,7 +241,7 @@ export function VideoPlayer() {
 								muted={mute}
 								playing={isPlaying}
 								onProgress={handleProgress}
-								onEnded={() => nextSong && nextSong()}
+								onEnded={() => nextTrack()}
 								onDuration={setDuration}
 								config={{
 									youtube: {
@@ -311,11 +319,11 @@ export function VideoPlayer() {
 										type="text"
 										icon={<StepForwardOutlined />}
 										onClick={handleNextTrack}
-										disabled={!canModerate || currentIndex >= playlist.length - 1}
+										disabled={!canModerate || currentIndex >= playlistTracks.length - 1}
 										style={{ 
 											color: "#fff", 
 											fontSize: "18px",
-											opacity: (!canModerate || currentIndex >= playlist.length - 1) ? 0.5 : 1
+											opacity: (!canModerate || currentIndex >= playlistTracks.length - 1) ? 0.5 : 1
 										}}
 									/>
 								</Tooltip>

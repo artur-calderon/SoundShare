@@ -65,15 +65,27 @@ export function MyRooms() {
 	useEffect(() => {
 		const fetchRooms = FetchRooms(user.accessToken)
 		fetchRooms.then(rooms => {
-			setMyRooms(rooms.filter((room : boolean) => room.owner === user.id));
-
+			console.log("🔍 MyRooms Debug - Todas as salas:", rooms);
+			console.log("🔍 MyRooms Debug - user.id:", user.id);
+			console.log("🔍 MyRooms Debug - user object:", user);
+			
+			const filteredRooms = rooms.filter((room : Rooms) => {
+				console.log(`🔍 MyRooms Debug - Comparando: room.owner="${room.owner}" === user.id="${user.id}" = ${room.owner === user.id}`);
+				return room.owner === user.id;
+			});
+			
+			console.log("🔍 MyRooms Debug - Salas filtradas:", filteredRooms);
+			setMyRooms(filteredRooms);
 		})
 	}, [user.accessToken]);
 
 	 function goToRoom(id: string) {
+		 console.log("🔍 MyRooms Debug - goToRoom chamado com id:", id);
+		 console.log("🔍 MyRooms Debug - user ao entrar na sala:", user);
 		 setLoading(true);
 		 changeRoomOnOffline(true, id).then(() =>{
 			 getInfoRoom(id, user).then(()=>{
+				 console.log("🔍 MyRooms Debug - getInfoRoom concluído, navegando para sala");
 				 setLoading(false);
 			    navigate(`/room/${id}`);
 			 })

@@ -13,7 +13,6 @@ import {RoomInfo} from "./components/RoomInfo";
 import {RoomControls} from "../../components/RoomControls";
 
 import {motion, Variants} from "framer-motion";
-import {usePlayerStore} from "../../contexts/PlayerContext/usePlayerStore";
 import {useSocketStore} from "../../contexts/PlayerContext/useSocketStore";
 import {useRoomStore} from "../../contexts/PlayerContext/useRoomStore";
 import {useEffect, useState, useRef} from "react";
@@ -37,9 +36,8 @@ export function Room(){
 	};
 	
 	const {id} = useParams();
-	const {isPlaying} = usePlayerStore();
 	const {connect, disconnect, leaveRoom, connected} = useSocketStore();
-	const {getInfoRoom, roomSpecs, roomState, isHost, canModerate} = useRoomStore();
+	const {getInfoRoom, roomSpecs, roomState, canModerate} = useRoomStore();
 	const {user} = userContext();
 
 	useEffect(() => {
@@ -99,8 +97,10 @@ export function Room(){
 							placement="left"
 							open={menuOpen}
 							onClose={() => setMenuOpen(false)}
-							bodyStyle={{ padding: 0, backgroundColor: mappedTheme.token.colorBgContainer }}
-							headerStyle={{ backgroundColor: mappedTheme.token.colorBgContainer, borderBottom: "none" }}
+							styles={{
+								body: { padding: 0, backgroundColor: mappedTheme.token.colorBgContainer },
+								header: { backgroundColor: mappedTheme.token.colorBgContainer, borderBottom: "none" }
+							}}
 							closeIcon={<span style={{ color: mappedTheme.token.colorPrimary}}>X</span>}
 							width={300}
 						>
@@ -174,8 +174,10 @@ export function Room(){
 							placement="right"
 							open={openPLaylist}
 							onClose={() => setOpenPlaylist(false)}
-							bodyStyle={{ padding: 0, backgroundColor: "#ffffff" }}
-							headerStyle={{ backgroundColor: "#ffffff", borderBottom: "none" }}
+							styles={{
+								body: { padding: 0, backgroundColor: "#ffffff" },
+								header: { backgroundColor: "#ffffff", borderBottom: "none" }
+							}}
 							closeIcon={<span style={{ color: "#1890ff"}}>X</span>}
 							width={400}
 						>

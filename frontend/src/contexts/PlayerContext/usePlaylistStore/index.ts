@@ -1,200 +1,160 @@
-import { create } from 'zustand';
-import { usePlayerStore } from "../usePlayerStore";
-import { useSocketStore } from "../useSocketStore";
-import { userContext } from "../../UserContext.tsx";
-import { useRoomStore } from "../useRoomStore";
+import { create } from "zustand";
 
 interface User {
-	id: string,
-	accessToken: string,
-	name: string,
-	email: string,
-	image: string,
-	role: string
+	id: string;
+	accessToken: string;
+	name: string;
+	email: string;
+	image: string;
+	role: string;
 }
 
 interface Track {
 	id: string;
 	title: string;
 	description: string;
-	url: string;
 	thumbnail: string;
+	url: string;
+	duration?: number;
 	user: User;
 }
 
 interface PlaylistState {
-	playlist: Track[];
+	// Estado da playlist
+	tracks: Track[];
 	currentIndex: number;
 	
-	// Setters
-	setPlaylist: (playlist: Track[]) => void;
+	// Setters básicos
+	setTracks: (tracks: Track[]) => void;
 	setCurrentIndex: (index: number) => void;
-	
-	// Controles de playlist
-	addTrack: (roomId: string, track: Track) => void;
+	addTrack: (track: Track) => void;
 	removeTrack: (trackId: string) => void;
 	clearPlaylist: () => void;
 	
 	// Navegação
-	nextSong: () => void;
-	beforeSong: () => void;
-	jumpToTrack: (trackIndex: number) => void;
+	nextTrack: () => Track | null;
+	previousTrack: () => Track | null;
+	jumpToTrack: (index: number) => Track | null;
+	
+	// Utilitários
+	getCurrentTrack: () => Track | null;
+	getTrackByIndex: (index: number) => Track | null;
+	getTrackById: (id: string) => Track | null;
 }
 
-export const usePlaylistStore = create<PlaylistState>((set, get) => {
-	return {
-		playlist: [],
-		currentIndex: 0,
+export const usePlaylistStore = create<PlaylistState>((set, get) => ({
+	// Estado inicial
+	tracks: [],
+	currentIndex: 0,
 
-		setPlaylist: (playlist) => set({ playlist }),
-		setCurrentIndex: (index) => set({ currentIndex: index }),
-
-			addTrack: (roomId, track) => {
-		console.log("🎯 addTrack chamado:", { roomId, track });
+	// Setters básicos
+	setTracks: (tracks) => {
+		// ✅ CORREÇÃO: Verificar se realmente mudou antes de atualizar
+		const currentTracks = get().tracks;
+		const hasChanged = JSON.stringify(currentTracks) !== JSON.stringify(tracks);
 		
-		const { roomState } = useRoomStore.getState();
-		const { user } = userContext.getState();
-		const { addTrack: socketAddTrack } = useSocketStore.getState();
-		
-		console.log("🔍 Estado atual:", { roomState: !!roomState, user: !!user, socketAddTrack: !!socketAddTrack });
-		
-		const trackMusic = {
-			id: track.id,
-			title: track.title,
-			description: track.description,
-			url: track.url,
-			thumbnail: track.thumbnail,
-			user: user
-		};
-
-		console.log("🎵 TrackMusic criado:", trackMusic);
-
-		// Verifica se já está na playlist
-		const isAlreadyInPlaylist = roomState?.playlist.some(music => 
-			music.id === trackMusic.id || music.url === trackMusic.url
-		);
-
-		console.log("🔍 Verificação playlist:", { isAlreadyInPlaylist, playlistLength: roomState?.playlist?.length });
-
-		if (!isAlreadyInPlaylist) {
-			// ✅ CORREÇÃO: Adiciona via socket para sincronizar com todos
-			console.log("📡 Enviando para socket...");
-			socketAddTrack(trackMusic);
-			
-			// Não atualiza localmente - o socket vai atualizar via evento "trackAdded"
-			console.log("✅ Música enviada para adicionar via socket:", trackMusic.title);
+		if (hasChanged) {
+			console.log("🔄 PlaylistStore: setTracks chamado com:", tracks);
+			set({ tracks });
 		} else {
-			console.log("⚠️ Música já está na playlist:", trackMusic.title);
+			console.log("ℹ️ PlaylistStore: setTracks ignorado - tracks não mudaram");
 		}
 	},
 
-		removeTrack: (trackId: string) => {
-			console.log("🗑️ removeTrack chamado:", { trackId });
-			
-			const { canModerate } = useRoomStore.getState();
-			const { removeTrack: socketRemoveTrack } = useSocketStore.getState();
+	setCurrentIndex: (index) => {
+		const { tracks } = get();
+		if (index >= 0 && index < tracks.length) {
+			set({ currentIndex: index });
+		}
+	},
 
-			// Só permite remover se for dono ou moderador
-			if (!canModerate) {
-				console.log("❌ Sem permissão para remover música");
-				return;
+	addTrack: (track) => {
+		const { tracks } = get();
+		// Verificar se a música já existe
+		const exists = tracks.some(t => t.id === track.id);
+		if (!exists) {
+			const newTracks = [...tracks, track];
+			set({ tracks: newTracks });
+		}
+	},
+
+	removeTrack: (trackId) => {
+		const { tracks, currentIndex } = get();
+		const trackIndex = tracks.findIndex(t => t.id === trackId);
+		
+		if (trackIndex !== -1) {
+			const newTracks = tracks.filter(t => t.id !== trackId);
+			let newCurrentIndex = currentIndex;
+			
+			// Ajustar índice atual se necessário
+			if (trackIndex < currentIndex) {
+				newCurrentIndex = currentIndex - 1;
+			} else if (trackIndex === currentIndex && newTracks.length > 0) {
+				// Se removemos a música atual, ir para a próxima ou anterior
+				newCurrentIndex = Math.min(currentIndex, newTracks.length - 1);
+			} else if (newTracks.length === 0) {
+				newCurrentIndex = 0;
 			}
-
-			console.log("✅ Permissão concedida, removendo via socket...");
 			
-			// ✅ CORREÇÃO: NÃO remove localmente - deixa o socket sincronizar
-			// O evento "trackRemoved" vai atualizar o estado para todos
-			socketRemoveTrack(trackId);
-			
-			console.log("📡 Música enviada para remover via socket");
-		},
+			set({ 
+				tracks: newTracks, 
+				currentIndex: newCurrentIndex 
+			});
+		}
+	},
 
-		nextSong: () => {
-			console.log("⏭️ nextSong chamado");
-			
-			const { canModerate } = useRoomStore.getState();
-			const { nextTrack } = useSocketStore.getState();
-			const { playlist, currentIndex } = get();
+	clearPlaylist: () => {
+		set({ tracks: [], currentIndex: 0 });
+	},
 
-			console.log("🔍 Estado atual:", { canModerate, playlistLength: playlist.length, currentIndex });
+	// Navegação
+	nextTrack: () => {
+		const { tracks, currentIndex } = get();
+		if (tracks.length === 0) return null;
+		
+		const nextIndex = (currentIndex + 1) % tracks.length;
+		const nextTrack = tracks[nextIndex];
+		
+		set({ currentIndex: nextIndex });
+		
+		return nextTrack;
+	},
 
-			// Só permite controlar se for dono ou moderador
-			if (!canModerate) {
-				console.log("❌ Sem permissão para controlar reprodução");
-				return;
-			}
+	previousTrack: () => {
+		const { tracks, currentIndex } = get();
+		if (tracks.length === 0) return null;
+		
+		const prevIndex = currentIndex === 0 ? tracks.length - 1 : currentIndex - 1;
+		const prevTrack = tracks[prevIndex];
+		
+		set({ currentIndex: prevIndex });
+		
+		return prevTrack;
+	},
 
-			if (playlist.length === 0) {
-				console.log("⚠️ Playlist vazia");
-				return;
-			}
+	jumpToTrack: (index) => {
+		const { tracks } = get();
+		if (index >= 0 && index < tracks.length) {
+			const track = tracks[index];
+			set({ currentIndex: index });
+			return track;
+		}
+		return null;
+	},
 
-			console.log("✅ Permissão concedida, enviando nextTrack para socket...");
-			
-			// ✅ CORREÇÃO: Sempre envia para socket - não verifica índice
-			// O backend vai gerenciar a navegação
-			nextTrack();
-			
-			console.log("📡 NextTrack enviado para socket");
-		},
+	// Utilitários
+	getCurrentTrack: () => {
+		const { tracks, currentIndex } = get();
+		return tracks[currentIndex] || null;
+	},
 
-		beforeSong: () => {
-			console.log("⏮️ beforeSong chamado");
-			
-			const { canModerate } = useRoomStore.getState();
-			const { previousTrack } = useSocketStore.getState();
-			const { playlist, currentIndex } = get();
+	getTrackByIndex: (index) => {
+		const { tracks } = get();
+		return tracks[index] || null;
+	},
 
-			console.log("🔍 Estado atual:", { canModerate, playlistLength: playlist.length, currentIndex });
-
-			// Só permite controlar se for dono ou moderador
-			if (!canModerate) {
-				console.log("❌ Sem permissão para controlar reprodução");
-				return;
-			}
-
-			if (playlist.length === 0) {
-				console.log("⚠️ Playlist vazia");
-				return;
-			}
-
-			console.log("✅ Permissão concedida, enviando previousTrack para socket...");
-			
-			// ✅ CORREÇÃO: Sempre envia para socket - não verifica índice
-			// O backend vai gerenciar a navegação
-			previousTrack();
-			
-			console.log("📡 PreviousTrack enviado para socket");
-		},
-
-		jumpToTrack: (trackIndex: number) => {
-			console.log("🎯 jumpToTrack chamado:", { trackIndex });
-			
-			const { canModerate } = useRoomStore.getState();
-			const { jumpToTrack: socketJumpToTrack } = useSocketStore.getState();
-			const { playlist } = get();
-
-			console.log("🔍 Estado atual:", { canModerate, playlistLength: playlist.length });
-
-			// Só permite controlar se for dono ou moderador
-			if (!canModerate) {
-				console.log("❌ Sem permissão para controlar reprodução");
-				return;
-			}
-
-			if (playlist.length === 0) {
-				console.log("⚠️ Playlist vazia");
-				return;
-			}
-
-			console.log("✅ Permissão concedida, enviando jumpToTrack para socket...");
-			
-			// ✅ CORREÇÃO: Sempre envia para socket - validação será feita no backend
-			socketJumpToTrack(trackIndex);
-			
-			console.log("📡 JumpToTrack enviado para socket");
-		},
-
-		clearPlaylist: () => set({ playlist: [], currentIndex: 0 }),
-	};
-});
+	getTrackById: (id) => {
+		const { tracks } = get();
+		return tracks.find(t => t.id === id) || null;
+	},
+}));

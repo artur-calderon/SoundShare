@@ -3,9 +3,6 @@ import { talkToApi } from "../../../utils/talkToApi";
 import { db } from "../../../services/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 import { userContext } from "../../UserContext.tsx";
-import { usePlayerStore } from "../usePlayerStore";
-import { usePlaylistStore } from "../usePlaylistStore";
-import { useSocketStore } from "../useSocketStore";
 
 interface RoomSpecs {
 	id?: string;
@@ -81,13 +78,10 @@ interface RoomStore {
 	isHost: boolean;
 	isModerator: boolean;
 	canModerate: boolean;
-	currentTime: number;
 	roomSpecs: RoomSpecs;
 	roomState: RoomState | null;
-	socket?: any;
 	
 	// Setters
-	setSocket: (socket: any) => void;
 	setRoomState: (newState: RoomState) => void;
 	setPlaying: (playing: boolean) => void;
 	setCurrentTime: (time: number) => void;
@@ -110,6 +104,9 @@ interface RoomStore {
 	
 	// Sincronização
 	seekTo: (time: number) => void;
+	
+	// Limpeza de estado
+	clearRoomState: () => void;
 }
 
 export const useRoomStore = create<RoomStore>((set, get) => {
@@ -117,43 +114,65 @@ export const useRoomStore = create<RoomStore>((set, get) => {
 		user: {} as User,
 		roomOnline: false,
 		roomState: null,
-		currentTime: 0,
 		isHost: false,
 		isModerator: false,
 		canModerate: false,
 		roomSpecs: {},
-		socket: undefined,
-
-		setSocket: (socket) => set({ socket }),
 
 		setRoomState: (newState) => {
-			set({ roomState: newState });
+			// ✅ CORREÇÃO: Evitar chamadas em cascata que causam ciclo infinito
+			const currentState = get();
+			const currentRoomState = currentState.roomState;
+			
+			// Só atualiza se realmente mudou
+			const hasChanged = !currentRoomState || 
+				JSON.stringify(currentRoomState) !== JSON.stringify(newState);
+			
+			if (hasChanged) {
+				set({ roomState: newState });
 
-			// Atualiza dinamicamente quem é o host e moderador
-			get().setIsHost();
-			get().setIsModerator();
-			get().setCanModerate();
+				// ✅ CORREÇÃO: Usar setTimeout para evitar chamadas síncronas em cascata
+				setTimeout(() => {
+					// Atualiza dinamicamente quem é o host e moderador
+					get().setIsHost();
+					get().setIsModerator();
+					get().setCanModerate();
+				}, 0);
+			}
 		},
 
 		setIsHost: () => {
-			const { roomSpecs, user } = get();
-			if (user.id) {
-				const isHost = roomSpecs.owner === user.id;
+			const { roomState } = get();
+			const { user } = userContext.getState();
+			if (user.id && roomState) {
+				// ✅ CORREÇÃO: Host é quem está na syncSource, não necessariamente o owner
+				const isHost = roomState.syncSource?.userId === user.id;
+				console.log(`🔍 Verificando se é host: user.id=${user.id}, syncSource.userId=${roomState.syncSource?.userId}, isHost=${isHost}`);
 				set({ isHost });
 			}
 		},
 
 		setIsModerator: () => {
-			const { roomSpecs, user } = get();
-			if (user.id && roomSpecs.moderators) {
-				const isModerator = roomSpecs.moderators.includes(user.id);
+			const { roomState } = get();
+			const { user } = userContext.getState();
+			if (user.id && roomState && roomState.moderators) {
+				const isModerator = roomState.moderators.includes(user.id);
+				console.log(`🔍 Verificando se é moderador: user.id=${user.id}, moderators=${roomState.moderators}, isModerator=${isModerator}`);
 				set({ isModerator });
 			}
 		},
 
 		setCanModerate: () => {
-			const { isHost, isModerator } = get();
-			set({ canModerate: isHost || isModerator });
+			const { roomState } = get();
+			const { user } = userContext.getState();
+			if (user.id && roomState) {
+				// ✅ CORREÇÃO: canModerate é baseado em owner ou moderador, não em host
+				const isOwner = roomState.owner === user.id;
+				const isModerator = roomState.moderators?.includes(user.id) || false;
+				const canModerate = isOwner || isModerator;
+				console.log(`🔍 Verificando canModerate: isOwner=${isOwner}, isModerator=${isModerator}, canModerate=${canModerate}`);
+				set({ canModerate });
+			}
 		},
 
 		setPlaying: (playing) => {
@@ -168,7 +187,6 @@ export const useRoomStore = create<RoomStore>((set, get) => {
 			if (roomState) {
 				set({ roomState: { ...roomState, currentTime: time } });
 			}
-			set({ currentTime: time });
 		},
 
 		setRoomOnline: (online) => {
@@ -192,20 +210,7 @@ export const useRoomStore = create<RoomStore>((set, get) => {
 		setRoomOffline: () => {
 			set({ roomOnline: false, roomState: null });
 			
-			// ✅ NOVO: Limpar todos os estados relacionados à sala
-			// Limpar player
-			usePlayerStore.getState().setTrack(null);
-			usePlayerStore.getState().setIsPlaying(false);
-			usePlayerStore.getState().setSeekTime(0);
-			
-			// Limpar playlist
-			usePlaylistStore.getState().setPlaylist([]);
-			usePlaylistStore.getState().setCurrentIndex(0);
-			
-			// Limpar socket
-			useSocketStore.getState().disconnect();
-			
-			// ✅ NOVO: Redirecionar para /app após um pequeno delay para permitir limpeza dos estados
+			// Redirecionar para /app após um pequeno delay
 			setTimeout(() => {
 				window.location.href = "/app";
 			}, 100);
@@ -216,14 +221,13 @@ export const useRoomStore = create<RoomStore>((set, get) => {
 			if (roomState) {
 				set({ roomState: { ...roomState, currentTime: time } });
 			}
-			set({ currentTime: time });
 		},
 
 		changeRoomOnOffline: async (status, id) => {
 			try {
 				const roomRef = doc(db, "rooms", id);
 				await updateDoc(roomRef, { online: status });
-				const { user } = get();
+				const { user } = userContext.getState();
 				if (user.id) {
 					get().getInfoRoom(id, user);
 				}
@@ -236,7 +240,7 @@ export const useRoomStore = create<RoomStore>((set, get) => {
 			try {
 				const roomRef = doc(db, "rooms", id);
 				await updateDoc(roomRef, { online: status });
-				const { user } = get();
+				const { user } = userContext.getState();
 				if (user.id) {
 					get().getInfoRoom(id, user);
 				}
@@ -247,8 +251,10 @@ export const useRoomStore = create<RoomStore>((set, get) => {
 
 		getInfoRoom: async (id, user) => {
 			try {
+				console.log("🔍 getInfoRoom Debug - id:", id, "user:", user);
 				const res = await talkToApi("get", "room", id, user.accessToken);
 				if (res?.data) {
+					console.log("🔍 getInfoRoom Debug - roomData da API:", res.data);
 					set({ roomSpecs: res.data, user });
 				}
 
@@ -262,6 +268,19 @@ export const useRoomStore = create<RoomStore>((set, get) => {
 					window.location.href = "/app";
 				}
 			}
+		},
+
+		// ✅ NOVO: Limpar estado da sala
+		clearRoomState: () => {
+			console.log("🧹 Limpando estado da sala");
+			set({
+				roomOnline: false,
+				roomState: null,
+				isHost: false,
+				isModerator: false,
+				canModerate: false,
+				roomSpecs: {}
+			});
 		},
 	};
 });

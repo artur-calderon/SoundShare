@@ -27,7 +27,7 @@ export function Main() {
 						)}
 						{roomState?.playlist && (
 							<Tag color="purple" style={{ margin: 0 }}>
-								🎵 {roomState.playlist.length} músicas
+								🎵 {roomState.playlist?.length || 0} músicas
 							</Tag>
 						)}
 					</Space>

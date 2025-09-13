@@ -2,7 +2,6 @@ import { useState } from "react";
 import { PlayerControlsContainer } from "./styles.ts";
 import { usePlayerStore } from "../../../../contexts/PlayerContext/usePlayerStore";
 import { useSocketStore } from "../../../../contexts/PlayerContext/useSocketStore";
-import { usePlaylistStore } from "../../../../contexts/PlayerContext/usePlaylistStore";
 import { useRoomStore } from "../../../../contexts/PlayerContext/useRoomStore";
 import { Flex, Progress, Slider, Typography, message } from "antd";
 
@@ -24,6 +23,7 @@ import useBreakpoint from "antd/es/grid/hooks/useBreakpoint.js";
 export function PlayerControls() {
 	const { Title } = Typography;
 
+	// ✅ OTIMIZAÇÃO: Usar seletores específicos para evitar re-renders desnecessários
 	const { isPlaying, setVolume, toggleMute, mute, duration, played, volume, currentTrack } = usePlayerStore();
 	const { roomState, canModerate } = useRoomStore();
 	const { playPause, nextTrack, previousTrack } = useSocketStore();

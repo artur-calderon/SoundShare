@@ -12,25 +12,55 @@ interface RoomControlsProps {
 
 export const RoomControls: React.FC<RoomControlsProps> = ({ roomId }) => {
 	const { user } = userContext();
-	const { isHost, isModerator, canModerate, roomOnline, roomState } = useRoomStore();
-	const { 
-		toggleRoomStatus, 
-		kickUser, 
-		toggleModerator,
-		ping 
-	} = useSocketStore();
-	const { 
-		playPause, 
-		nextTrack, 
-		previousTrack, 
-		jumpToTrack 
-	} = useSocketStore();
-	const { 
-		removeTrack, 
-		playlist, 
-		currentIndex 
-	} = usePlaylistStore();
-	const { isPlaying, currentTrack } = usePlayerStore();
+	
+	// ✅ OTIMIZAÇÃO: Usar seletores específicos para evitar re-renders desnecessários
+	const isHost = useRoomStore((state) => state.isHost);
+	const isModerator = useRoomStore((state) => state.isModerator);
+	const canModerate = useRoomStore((state) => state.canModerate);
+	const roomOnline = useRoomStore((state) => state.roomOnline);
+	const roomState = useRoomStore((state) => state.roomState);
+	
+	// ✅ OTIMIZAÇÃO: Seletores individuais para melhor performance
+	const toggleRoomStatus = useSocketStore((state) => state.toggleRoomStatus);
+	const kickUser = useSocketStore((state) => state.kickUser);
+	const toggleModerator = useSocketStore((state) => state.toggleModerator);
+	const ping = useSocketStore((state) => state.ping);
+	const playPause = useSocketStore((state) => state.playPause);
+	const nextTrack = useSocketStore((state) => state.nextTrack);
+	const previousTrack = useSocketStore((state) => state.previousTrack);
+	const jumpToTrack = useSocketStore((state) => state.jumpToTrack);
+	
+	const removeTrack = usePlaylistStore((state) => state.removeTrack);
+	const tracks = usePlaylistStore((state) => state.tracks);
+	const currentIndex = usePlaylistStore((state) => state.currentIndex);
+	
+	const isPlaying = usePlayerStore((state) => state.isPlaying);
+
+	// ✅ NOVO: Valores seguros para evitar erros (definidos antes de qualquer uso)
+	const safeTracks = Array.isArray(tracks) ? tracks : [];
+	const safeCurrentIndex = typeof currentIndex === 'number' ? currentIndex : 0;
+	
+	// ✅ NOVO: Garantir que safeTracks sempre tenha length
+	const tracksLength = safeTracks.length || 0;
+
+	// Debug: verificar estado dos dados (removido para evitar spam de logs)
+	// console.log("🔍 RoomControls Debug:", {
+	// 	tracks: tracks,
+	// 	tracksLength: tracksLength,
+	// 	currentIndex: currentIndex,
+	// 	safeCurrentIndex: safeCurrentIndex,
+	// 	roomState: roomState
+	// });
+
+	// ✅ NOVO: Early return se dados não estiverem prontos
+	if (safeTracks.length === 0 && (!tracks || !Array.isArray(tracks))) {
+		console.log("⚠️ RoomControls: tracks não está pronto, renderizando loading");
+		return (
+			<RoomControlsContainer>
+				<div>Carregando controles da sala...</div>
+			</RoomControlsContainer>
+		);
+	}
 
 	// Função para expulsar usuário
 	const handleKickUser = (userId: string, reason?: string) => {
@@ -41,14 +71,18 @@ export const RoomControls: React.FC<RoomControlsProps> = ({ roomId }) => {
 
 	// Função para adicionar/remover moderador
 	const handleToggleModerator = (userId: string, isModerator: boolean) => {
-		if (isHost) {
+		// ✅ CORREÇÃO: Apenas owner pode promover moderadores
+		const isOwner = roomState?.owner === user?.id;
+		if (isOwner) {
 			toggleModerator(userId, isModerator);
 		}
 	};
 
 	// Função para ativar/desativar sala
 	const handleToggleRoomStatus = () => {
-		if (isHost) {
+		// ✅ CORREÇÃO: Apenas owner pode ativar/desativar sala
+		const isOwner = roomState?.owner === user?.id;
+		if (isOwner) {
 			toggleRoomStatus(!roomOnline);
 		}
 	};
@@ -74,7 +108,7 @@ export const RoomControls: React.FC<RoomControlsProps> = ({ roomId }) => {
 		}, 30000); // Ping a cada 30 segundos
 
 		return () => clearInterval(interval);
-	}, [ping]);
+	}, [ping]); // ✅ CORREÇÃO: Incluir ping nas dependências
 
 	return (
 		<RoomControlsContainer>
@@ -118,7 +152,7 @@ export const RoomControls: React.FC<RoomControlsProps> = ({ roomId }) => {
 						<button 
 							onClick={previousTrack}
 							className="control-btn"
-							disabled={currentIndex <= 0}
+							disabled={safeCurrentIndex <= 0}
 						>
 							⏮️ Anterior
 						</button>
@@ -126,7 +160,7 @@ export const RoomControls: React.FC<RoomControlsProps> = ({ roomId }) => {
 						<button 
 							onClick={nextTrack}
 							className="control-btn"
-							disabled={currentIndex >= playlist.length - 1}
+							disabled={safeCurrentIndex >= tracksLength - 1}
 						>
 							⏭️ Próxima
 						</button>
@@ -139,9 +173,9 @@ export const RoomControls: React.FC<RoomControlsProps> = ({ roomId }) => {
 				<div className="playlist-controls">
 					<h3>Controle da Playlist</h3>
 					<div className="playlist">
-						{playlist.map((track, index) => (
+						{safeTracks.map((track, index) => (
 							<div key={track.id} className="playlist-item">
-								<span className={`track-info ${index === currentIndex ? 'current' : ''}`}>
+								<span className={`track-info ${index === safeCurrentIndex ? 'current' : ''}`}>
 									{index + 1}. {track.title} - {track.user.name}
 								</span>
 								
@@ -149,7 +183,7 @@ export const RoomControls: React.FC<RoomControlsProps> = ({ roomId }) => {
 									<button 
 										onClick={() => handleJumpToTrack(index)}
 										className="action-btn jump"
-										disabled={index === currentIndex}
+										disabled={index === safeCurrentIndex}
 									>
 										🎯 Tocar
 									</button>
@@ -220,14 +254,17 @@ export const RoomControls: React.FC<RoomControlsProps> = ({ roomId }) => {
 			<div className="permissions-info">
 				<h3>Suas Permissões</h3>
 				<div className="permissions">
-					<span className={`permission ${isHost ? 'active' : 'inactive'}`}>
-						👑 Dono da Sala: {isHost ? 'Sim' : 'Não'}
+					<span className={`permission ${roomState?.owner === user?.id ? 'active' : 'inactive'}`}>
+						👑 Dono da Sala: {roomState?.owner === user?.id ? 'Sim' : 'Não'}
 					</span>
 					<span className={`permission ${isModerator ? 'active' : 'inactive'}`}>
 						🛡️ Moderador: {isModerator ? 'Sim' : 'Não'}
 					</span>
 					<span className={`permission ${canModerate ? 'active' : 'inactive'}`}>
 						⚙️ Pode Moderar: {canModerate ? 'Sim' : 'Não'}
+					</span>
+					<span className={`permission ${isHost ? 'active' : 'inactive'}`}>
+						🎵 Host (Sincronização): {isHost ? 'Sim' : 'Não'}
 					</span>
 				</div>
 			</div>

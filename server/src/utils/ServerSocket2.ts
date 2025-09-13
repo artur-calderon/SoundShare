@@ -50,6 +50,9 @@ interface RoomState {
   // ✅ NOVO: Campos para sincronização de tempo
   trackStartTime: Date | null;
   lastSyncTime: number;
+  // ✅ NOVO: Sistema simples de sincronização
+  videoStartTimestamp?: number; // Date.now() quando música começou
+  videoId?: string; // ID da música atual
   // ✅ NOVO: Fonte de sincronização dinâmica
   syncSource: {
     userId: string;
@@ -70,7 +73,21 @@ const timeSyncIntervals: Record<string, NodeJS.Timeout> = {};
 // ✅ NOVO: Sistema de heartbeat para verificar atividade dos usuários
 const heartbeatIntervals: Record<string, NodeJS.Timeout> = {};
 
-// Função para calcular tempo atual baseado no tempo de início da música
+// ✅ NOVO: Função simples para calcular tempo atual baseado em timestamp
+function getCurrentVideoTime(room: RoomState): number {
+  if (!room.playing || !room.videoStartTimestamp || !room.videoId) {
+    return 0;
+  }
+  
+  const now = Date.now();
+  const elapsedSeconds = Math.floor((now - room.videoStartTimestamp) / 1000);
+  
+  console.log(`🕐 Tempo calculado: ${elapsedSeconds}s (início: ${room.videoStartTimestamp}, agora: ${now})`);
+  
+  return elapsedSeconds;
+}
+
+// Função para calcular tempo atual baseado no tempo de início da música (MANTIDA PARA COMPATIBILIDADE)
 function calculateCurrentTime(room: RoomState): number {
   if (!room.playing || !room.trackStartTime || !room.currentTrack) {
     console.log(`⚠️ Não é possível calcular tempo: playing=${room.playing}, trackStartTime=${!!room.trackStartTime}, currentTrack=${!!room.currentTrack}`);
@@ -225,28 +242,42 @@ function startTimeSync(roomId: string, ioInstance: any) {
   
   timeSyncIntervals[roomId] = setInterval(() => {
     const room = rooms[roomId];
-    if (room && room.online && room.playing && room.currentTrack && room.syncSource?.isActive) {
-      // ✅ Verificar se o host atualizou recentemente (últimos 3 segundos)
-      const timeSinceHostUpdate = room.lastHostUpdate ? Date.now() - room.lastHostUpdate.getTime() : Infinity;
+    if (room && room.online && room.playing && room.currentTrack) {
+      // ✅ NOVO: Usar sistema simples primeiro
+      let currentTime = room.currentTime;
+      let source = "server_calculation";
       
-      if (timeSinceHostUpdate < 3000) { // 3 segundos
-        // ✅ Host atualizou recentemente - usar tempo do host
-        console.log(`🔄 Host atualizou recentemente (${Math.floor(timeSinceHostUpdate/1000)}s atrás) - usando tempo do host: ${room.currentTime}s`);
-      } else {
-        // ✅ Host não atualizou - usar cálculo como fallback
-        console.log(`⚠️ Host não atualizou há ${Math.floor(timeSinceHostUpdate/1000)}s - usando cálculo como fallback`);
-        room.currentTime = calculateCurrentTime(room);
+      if (room.videoStartTimestamp && room.videoId) {
+        // Usar sistema simples
+        currentTime = getCurrentVideoTime(room);
+        room.currentTime = currentTime;
+        source = "simple_timestamp";
+      } else if (room.syncSource?.isActive) {
+        // Fallback para sistema antigo
+        const timeSinceHostUpdate = room.lastHostUpdate ? Date.now() - room.lastHostUpdate.getTime() : Infinity;
+        
+        if (timeSinceHostUpdate < 3000) { // 3 segundos
+          // Host atualizou recentemente - usar tempo do host
+          console.log(`🔄 Host atualizou recentemente (${Math.floor(timeSinceHostUpdate/1000)}s atrás) - usando tempo do host: ${room.currentTime}s`);
+          source = "host_recent";
+        } else {
+          // Host não atualizou - usar cálculo como fallback
+          console.log(`⚠️ Host não atualizou há ${Math.floor(timeSinceHostUpdate/1000)}s - usando cálculo como fallback`);
+          currentTime = calculateCurrentTime(room);
+          room.currentTime = currentTime;
+          source = "fallback_calculation";
+        }
       }
       
       // ✅ Enviar sincronização para todos os usuários da sala
       ioInstance.to(roomId).emit("timeSync", { 
-        currentTime: room.currentTime,
+        currentTime: currentTime,
         trackId: room.currentTrack.id,
         syncSource: room.syncSource,
-        source: timeSinceHostUpdate < 3000 ? "host_recent" : "fallback_calculation"
+        source: source
       });
     }
-  }, 1000); // Sincronizar a cada segundo
+  }, 5000); // Sincronizar a cada 5 segundos
 }
 
 // ✅ NOVO: Função para iniciar heartbeat para uma sala
@@ -324,13 +355,16 @@ export function startSocketServer(server: any) {
           playlist: [],
           currentTrack: null,
           users: new Map(),
-          owner: userData.owner || userId,
+          owner: userId, // ✅ CORREÇÃO: Owner é sempre quem cria a sala
           moderators: userData.moderators || [],
           createdAt: new Date(),
           lastActivity: new Date(),
           // Inicializar campos de sincronização
           trackStartTime: null,
           lastSyncTime: 0,
+          // ✅ NOVO: Sistema simples de sincronização
+          videoStartTimestamp: undefined,
+          videoId: undefined,
           // ✅ NOVO: Inicializar fonte de sincronização
           syncSource: null,
           // ✅ NOVO: Inicializar último tempo atualizado pelo host
@@ -340,7 +374,13 @@ export function startSocketServer(server: any) {
 
       const room = rooms[roomId];
       
-      // Verificar se é o dono da sala
+      // ✅ CORREÇÃO: Verificar se é o dono da sala (corrigir inconsistências)
+      // Se userData indica que é owner, corrigir room.owner
+      if (userData.owner === userId || userData.role === 'owner') {
+        room.owner = userId;
+        console.log(`🔧 Corrigindo owner da sala ${roomId}: ${userId}`);
+      }
+      
       const isOwner = userId === room.owner;
       const isModerator = room.moderators.includes(userId);
       
@@ -354,6 +394,29 @@ export function startSocketServer(server: any) {
         
         // ✅ Iniciar heartbeat para a sala
         startHeartbeat(roomId, io);
+      }
+      
+      // ✅ NOVO: Se owner voltou, reassumir controle automaticamente
+      if (isOwner && room.online) {
+        console.log(`Owner ${userId} voltou à sala ${roomId} - reassumindo controle`);
+        
+        // ✅ Reassumir como fonte de sincronização
+        room.syncSource = {
+          userId: userId,
+          userRole: 'owner',
+          lastSyncTime: room.currentTime || 0,
+          isActive: true,
+          lastActivity: new Date()
+        };
+        
+        // ✅ Notificar que owner reassumiu controle
+        io.to(roomId).emit("ownerReturned", {
+          ownerId: userId,
+          message: "Owner voltou e reassumiu controle da sala",
+          syncSource: room.syncSource
+        });
+        
+        console.log(`Owner ${userId} reassumiu controle da sala ${roomId}`);
       }
 
       // Adicionar usuário à sala
@@ -383,18 +446,30 @@ export function startSocketServer(server: any) {
         existingUser.socketId = socket.id;
       }
 
-      // ✅ CORREÇÃO: Calcular tempo atual real se música estiver tocando
+      // ✅ NOVO: Calcular tempo atual usando sistema simples
       let currentTimeToSend = room.currentTime;
-      if (room.playing && room.currentTrack && room.trackStartTime) {
-        currentTimeToSend = calculateCurrentTime(room);
-        room.currentTime = currentTimeToSend;
-        console.log(`🎯 Usuário entrando: música tocando, tempo calculado: ${currentTimeToSend}s`);
-      } else if (room.playing && room.currentTrack) {
-        // ✅ CORREÇÃO: Se está tocando mas não tem trackStartTime, criar um
-        console.log(`⚠️ Música tocando sem trackStartTime - criando um`);
-        room.trackStartTime = new Date();
-        room.lastSyncTime = room.currentTime || 0;
-        currentTimeToSend = room.currentTime || 0;
+      if (room.playing && room.currentTrack) {
+        // Tentar usar sistema simples primeiro
+        if (room.videoStartTimestamp && room.videoId) {
+          currentTimeToSend = getCurrentVideoTime(room);
+          room.currentTime = currentTimeToSend;
+          console.log(`🎯 Usuário entrando: música tocando, tempo calculado (simples): ${currentTimeToSend}s`);
+        } else if (room.trackStartTime) {
+          // Fallback para sistema antigo
+          currentTimeToSend = calculateCurrentTime(room);
+          room.currentTime = currentTimeToSend;
+          console.log(`🎯 Usuário entrando: música tocando, tempo calculado (antigo): ${currentTimeToSend}s`);
+        } else {
+          // Se está tocando mas não tem timestamp, criar um baseado no tempo atual
+          console.log(`⚠️ Música tocando sem timestamp - criando um baseado no tempo atual`);
+          const now = Date.now();
+          room.videoStartTimestamp = now - (room.currentTime * 1000); // Ajustar para o tempo atual
+          room.videoId = room.currentTrack.id;
+          room.trackStartTime = new Date(now - (room.currentTime * 1000));
+          room.lastSyncTime = room.currentTime || 0;
+          currentTimeToSend = room.currentTime || 0;
+          console.log(`🎯 Timestamp criado: ${room.videoStartTimestamp}, tempo atual: ${currentTimeToSend}s`);
+        }
       } else {
         console.log(`ℹ️ Música não está tocando: tempo=${currentTimeToSend}s`);
       }
@@ -554,12 +629,15 @@ export function startSocketServer(server: any) {
           room.playing = playing;
           room.lastActivity = new Date();
           
-          // ✅ CORREÇÃO: Gerenciar sincronização de tempo
-          if (playing && room.currentTrack && room.syncSource?.isActive) {
+          // ✅ NOVO: Gerenciar sincronização de tempo com sistema simples
+          if (playing && room.currentTrack) {
             // Iniciar reprodução - marcar tempo de início
-            if (!room.trackStartTime) {
+            if (!room.videoStartTimestamp || !room.videoId) {
+              room.videoStartTimestamp = Date.now();
+              room.videoId = room.currentTrack.id;
               room.trackStartTime = new Date();
               room.lastSyncTime = room.currentTime;
+              console.log(`🎵 playPause: iniciando reprodução com timestamp: ${room.videoStartTimestamp}`);
             }
             // Iniciar sincronização de tempo
             startTimeSync(roomId, io);
@@ -567,6 +645,7 @@ export function startSocketServer(server: any) {
             // Pausar reprodução - parar sincronização
             room.trackStartTime = null;
             stopTimeSync(roomId);
+            console.log(`⏸️ playPause: pausando reprodução`);
           }
           
           io.to(roomId).emit("playbackStateChanged", { 
@@ -597,24 +676,24 @@ export function startSocketServer(server: any) {
             stopTimeSync(roomId);
           }
           
-          // ✅ CORREÇÃO: Se já está tocando, manter o tempo atual
-          if (room.playing && room.currentTrack && room.trackStartTime) {
-            // Manter o tempo atual se a música já estava tocando
-            const currentTime = calculateCurrentTime(room);
-            room.currentTime = currentTime;
-            room.lastSyncTime = currentTime;
-            console.log(`🎵 playTrack: mantendo tempo atual: ${currentTime}s`);
-          } else {
-            // Nova música - começar do início
-            room.currentTime = 0;
-            room.lastSyncTime = 0;
-            console.log(`🎵 playTrack: nova música, começando do início`);
+          // ✅ CORREÇÃO: Adicionar música à playlist se não existir (apenas para playTrack)
+          const trackExists = room.playlist.some(t => t.id === track.id);
+          if (!trackExists) {
+            room.playlist.push(track);
+            console.log(`🎵 playTrack: música "${track.title}" adicionada à playlist`);
           }
-
+          
+          // ✅ NOVO: Nova música - sempre começar do início com sistema simples
           room.currentTrack = track;
           room.playing = true;
+          room.currentTime = 0;
+          room.lastSyncTime = 0;
           room.trackStartTime = new Date();
+          room.videoStartTimestamp = Date.now(); // ✅ NOVO: Timestamp simples
+          room.videoId = track.id; // ✅ NOVO: ID da música
           room.lastActivity = new Date();
+          
+          console.log(`🎵 playTrack: nova música "${track.title}", começando do início (timestamp: ${room.videoStartTimestamp})`);
           
           // ✅ Iniciar sincronização de tempo para nova música
           startTimeSync(roomId, io);
@@ -623,6 +702,11 @@ export function startSocketServer(server: any) {
           if (room.playing && room.currentTrack && room.trackStartTime) {
             room.currentTime = calculateCurrentTime(room);
             console.log(`🎵 trackChanged: tempo recalculado: ${room.currentTime}s`);
+          }
+
+          // ✅ NOVO: Emitir trackAdded se foi adicionada à playlist
+          if (!trackExists) {
+            io.to(roomId).emit("trackAdded", { track, playlist: room.playlist });
           }
 
           io.to(roomId).emit("trackChanged", { 
@@ -713,6 +797,8 @@ export function startSocketServer(server: any) {
           room.currentTime = 0; // ✅ Nova música sempre começa do início
           room.trackStartTime = new Date();
           room.lastSyncTime = 0;
+          room.videoStartTimestamp = Date.now(); // ✅ NOVO: Timestamp simples
+          room.videoId = nextTrack.id; // ✅ NOVO: ID da música
           room.lastActivity = new Date();
           
           // ✅ Iniciar sincronização para nova música
@@ -777,6 +863,8 @@ export function startSocketServer(server: any) {
             room.currentTime = 0; // ✅ Nova música sempre começa do início
             room.trackStartTime = new Date();
             room.lastSyncTime = 0;
+            room.videoStartTimestamp = Date.now(); // ✅ NOVO: Timestamp simples
+            room.videoId = targetTrack.id; // ✅ NOVO: ID da música
             room.lastActivity = new Date();
             
             // ✅ Iniciar sincronização para nova música
@@ -850,6 +938,8 @@ export function startSocketServer(server: any) {
           room.currentTime = 0; // ✅ Nova música sempre começa do início
           room.trackStartTime = new Date();
           room.lastSyncTime = 0;
+          room.videoStartTimestamp = Date.now(); // ✅ NOVO: Timestamp simples
+          room.videoId = prevTrack.id; // ✅ NOVO: ID da música
           room.lastActivity = new Date();
           
           // ✅ Iniciar sincronização para nova música
@@ -1223,32 +1313,21 @@ export function startSocketServer(server: any) {
               updateSyncSource(room, io);
             }
             
-            // ✅ Se for o dono, mas há outros usuários, transferir propriedade
+            // ✅ Se for o dono, mas há outros usuários, escolher novo host temporário
             if (userId === room.owner && room.users.size > 0) {
-              const nextOwner = Array.from(room.users.values()).sort((a, b) => 
-                a.joinedAt.getTime() - b.joinedAt.getTime()
-              )[0];
+              // ✅ CORREÇÃO: NÃO transferir propriedade - owner permanece fixo
+              // Apenas escolher novo host temporário para sincronização
+              console.log(`Owner ${userId} desconectou da sala ${roomId} - escolhendo novo host temporário`);
               
-              room.owner = nextOwner.id;
-              nextOwner.role = 'owner';
+              // ✅ Atualizar fonte de sincronização (escolhe moderador ou listener mais antigo)
+              updateSyncSource(room, io);
               
-              console.log(`Propriedade da sala ${roomId} transferida para ${nextOwner.name} (${nextOwner.id}) após desconexão`);
-              
-              // ✅ Notificar sobre mudança de dono
-              io.to(roomId).emit("ownerChanged", {
-                newOwner: {
-                  id: nextOwner.id,
-                  name: nextOwner.name,
-                  role: nextOwner.role
-                },
-                previousOwner: userId,
-                reason: "disconnection"
+              // ✅ Notificar que owner saiu mas sala continua ativa
+              io.to(roomId).emit("ownerDisconnected", {
+                ownerId: userId,
+                message: "Owner saiu da sala - host temporário assumiu controle",
+                newHost: room.syncSource
               });
-              
-              // ✅ Atualizar fonte de sincronização se necessário
-              if (!room.syncSource || !room.syncSource.isActive) {
-                updateSyncSource(room, io);
-              }
             } else if (userId === room.owner && room.users.size === 0) {
               // ✅ Sala realmente vazia - desativar
               room.online = false;

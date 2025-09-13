@@ -95,7 +95,7 @@ export default function RoomStats() {
 							<BoomBox size={20} />
 						</StatIcon>
 						<StatLabel>Músicas na Playlist:</StatLabel>
-						<StatValue>{roomState.playlist.length}</StatValue>
+						<StatValue>{roomState.playlist?.length || 0}</StatValue>
 					</StatItem>
 				)}
 

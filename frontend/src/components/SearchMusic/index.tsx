@@ -1,24 +1,23 @@
-import {List, Space, Input, Empty, Flex, Tooltip, Card, Button} from "antd";
+import {List, Empty, Flex, Tooltip, Button} from "antd";
 import { PlayCircleOutlined, UnorderedListOutlined, SearchOutlined, CloseOutlined } from "@ant-design/icons";
 import { useState, useEffect } from "react";
 
 import { SpaceContainer, SearchContainer, SearchInput, ResultsContainer, ResultsCard } from "./styles.ts";
 import {usePlayerStore} from "../../contexts/PlayerContext/usePlayerStore";
 import {userContext} from "../../contexts/UserContext.tsx";
-import {usePlaylistStore} from "../../contexts/PlayerContext/usePlaylistStore";
+import {useSocketStore} from "../../contexts/PlayerContext/useSocketStore";
 import {useParams} from "react-router-dom";
 import {useRoomStore} from "../../contexts/PlayerContext/useRoomStore";
 
 export function SearchMusic() {
-	const { Search } = Input;
 	const [showResults, setShowResults] = useState(false);
 
-	const {searchMusic, loading, searchResults} = usePlayerStore()
-	const {user} = userContext()
-	const {addTrack} = usePlaylistStore()
-	const {playMusic} = usePlayerStore()
-	const {id} = useParams()
-	const {roomState} = useRoomStore()
+	// ✅ OTIMIZAÇÃO: Usar seletores específicos para evitar re-renders desnecessários
+	const {searchMusic, loading, searchResults} = usePlayerStore();
+	const {user} = userContext();
+	const {playTrack} = useSocketStore();
+	const {id} = useParams();
+	const {roomState} = useRoomStore();
 
 	// Debug: log do roomId e estado
 	useEffect(() => {
@@ -33,7 +32,7 @@ export function SearchMusic() {
 		});
 		
 		// ✅ CORREÇÃO: Se não há música atual mas há playlist, define a primeira
-		if (roomState && !roomState.currentTrack && roomState.playlist && roomState.playlist.length > 0) {
+		if (roomState && !roomState.currentTrack && roomState.playlist && roomState.playlist?.length > 0) {
 			const { setTrack } = usePlayerStore.getState();
 			setTrack(roomState.playlist[0]);
 		}
@@ -184,7 +183,8 @@ export function SearchMusic() {
 																user: user
 															};
 															console.log("🎯 Tocando música:", trackToPlay);
-															playMusic(id, trackToPlay);
+															// ✅ CORREÇÃO: Apenas playTrack - o backend adiciona à playlist automaticamente
+															playTrack(trackToPlay);
 														}
 														setShowResults(false);
 													}}
@@ -213,7 +213,9 @@ export function SearchMusic() {
 																user: user
 															};
 															console.log("🎯 Adicionando à playlist:", trackToAdd);
-															addTrack(id, trackToAdd);
+															// ✅ CORREÇÃO: Usar addTrack do socket para adicionar sem tocar
+															const { addTrack: socketAddTrack } = useSocketStore.getState();
+															socketAddTrack(trackToAdd);
 														}
 													}}
 													style={{ 

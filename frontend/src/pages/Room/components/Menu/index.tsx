@@ -6,6 +6,7 @@ import {menuItems} from "./menuItens.tsx";
 import {darkRoomTheme} from "../../../../styles/themes/roomTheme.ts";
 import {useSocketStore} from "../../../../contexts/PlayerContext/useSocketStore";
 import {useRoomStore} from "../../../../contexts/PlayerContext/useRoomStore";
+import {userContext} from "../../../../contexts/UserContext";
 import {useEffect, useState} from "react";
 
 import {motion} from "framer-motion";
@@ -14,6 +15,7 @@ export function MenuSide() {
 	const navigate = useNavigate();
 	const {leaveRoom, toggleRoomStatus} = useSocketStore();
 	const {roomSpecs, isHost, canModerate, roomState} = useRoomStore();
+	const {user} = userContext();
 	const [roomOnline, setRoomOnline] = useState(roomState?.online || false);
 	const {id} = useParams();
 
@@ -62,7 +64,9 @@ export function MenuSide() {
 	}
 
 	function handleChangeRoomOnOff(check: boolean) {
-		if (isHost && id) {
+		// ✅ CORREÇÃO: Apenas owner pode ativar/desativar sala
+		const isOwner = roomState?.owner === user?.id;
+		if (isOwner && id) {
 			// Usar a nova funcionalidade de socket
 			toggleRoomStatus(check);
 			setRoomOnline(check);
@@ -72,7 +76,7 @@ export function MenuSide() {
 			} else {
 				message.success("Sala desativada com sucesso");
 			}
-		} else if (!isHost) {
+		} else if (!isOwner) {
 			message.info("Apenas o dono da sala pode ativar/desativar a sala");
 		} else {
 			message.error("Erro ao alterar status da sala");
@@ -80,7 +84,7 @@ export function MenuSide() {
 	}
 
 	// Verificar se o usuário tem permissão para controlar a sala
-	const canControlRoom = isHost;
+	const canControlRoom = roomState?.owner === user?.id;
 
 	return (
 		<MenuContainer>
@@ -90,13 +94,13 @@ export function MenuSide() {
 				<div>
 					<LogoText>SoundShare</LogoText>
 					<AdminBadge>
-						{isHost ? "👑 Admin" : canModerate ? "🛡️ Moderador" : "👤 Usuário"}
+						{roomState?.owner === user?.id ? "👑 Admin" : canModerate ? "🛡️ Moderador" : "👤 Usuário"}
 					</AdminBadge>
 				</div>
 			</LogoContainer>
 			
 			{/* Controle de status da sala */}
-			<ChangeRoomToOnOff ishost={canControlRoom.toString()}>
+			<ChangeRoomToOnOff $ishost={canControlRoom.toString()}>
 				<PowerOff size={20} color={darkRoomTheme.token.colorPrimary}/>
 				<motion.div layout transition={{type: 'spring', stiffness: 300, damping: 20}}>
 					<Switch

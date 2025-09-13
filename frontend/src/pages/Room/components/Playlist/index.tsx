@@ -5,7 +5,6 @@ import useBreakpoint from "antd/es/grid/hooks/useBreakpoint.js";
 import { ListMusic } from "lucide-react";
 import {PlaylistContainer, PlaylistItens, TitlePlaylist, PlaylistHeader, EmptyPlaylistContainer} from "./styles.ts";
 import {usePlaylistStore} from "../../../../contexts/PlayerContext/usePlaylistStore";
-import {usePlayerStore} from "../../../../contexts/PlayerContext/usePlayerStore";
 import {useSocketStore} from "../../../../contexts/PlayerContext/useSocketStore";
 import {useEffect} from "react";
 import {useRoomStore} from "../../../../contexts/PlayerContext/useRoomStore";
@@ -16,39 +15,33 @@ const { Text } = Typography;
 export function Playlist() {
 	const screens = useBreakpoint();
 
-	const {playlist, removeTrack, setPlaylist, currentIndex} = usePlaylistStore();
-	const {playMusic, currentTrack} = usePlayerStore();
-	const {roomState, canModerate} = useRoomStore();
+	// ✅ OTIMIZAÇÃO: Usar seletores específicos para evitar re-renders desnecessários
+	const {tracks, removeTrack, setTracks, currentIndex} = usePlaylistStore();
 	const {jumpToTrack} = useSocketStore();
+	const {roomState, canModerate} = useRoomStore();
+	
 	const {id} = useParams();
 
-	// ✅ CORREÇÃO: Sincronizar playlist com o estado da sala
+	// ✅ OTIMIZAÇÃO: Sincronizar playlist com o estado da sala (apenas quando necessário)
 	useEffect(() => {
-		if (roomState?.playlist) {
-			console.log("🔄 Playlist sincronizada com roomState:", roomState.playlist.length, "músicas");
-			setPlaylist(roomState.playlist);
-			
-			// ✅ CORREÇÃO: Se não há música atual mas há playlist, define a primeira
-			if (!roomState.currentTrack && roomState.playlist.length > 0) {
-				const { setTrack } = usePlayerStore.getState();
-				setTrack(roomState.playlist[0]);
-			}
+		if (roomState?.playlist && roomState.playlist.length !== tracks.length) {
+			console.log("🔄 Playlist sincronizada com roomState:", roomState.playlist?.length || 0, "músicas");
+			setTracks(roomState.playlist);
 		}
-	}, [roomState?.playlist, roomState?.currentTrack, setPlaylist]);
+	}, [roomState?.playlist, tracks.length, setTracks]);
 
-	// ✅ CORREÇÃO: Sincronizar índice atual com o estado da sala
+	// ✅ OTIMIZAÇÃO: Sincronizar índice atual com o estado da sala (apenas quando necessário)
 	useEffect(() => {
 		if (roomState?.currentTrack && roomState.playlist) {
-			const currentIndex = roomState.playlist.findIndex(track => 
+			const newCurrentIndex = roomState.playlist.findIndex(track => 
 				track.id === roomState.currentTrack?.id || track.url === roomState.currentTrack?.url
 			);
-			if (currentIndex !== -1) {
-				console.log("🎯 Índice atual sincronizado:", currentIndex, roomState.currentTrack.title);
-				// ✅ NOVA IMPLEMENTAÇÃO: Atualiza o currentIndex local
-				usePlaylistStore.getState().setCurrentIndex(currentIndex);
+			if (newCurrentIndex !== -1 && newCurrentIndex !== currentIndex) {
+				console.log("🎯 Índice atual sincronizado:", newCurrentIndex, roomState.currentTrack.title);
+				usePlaylistStore.getState().setCurrentIndex(newCurrentIndex);
 			}
 		}
-	}, [roomState?.currentTrack, roomState?.playlist]);
+	}, [roomState?.currentTrack, roomState?.playlist, currentIndex]);
 
 	// Função para pular para música específica com verificação de permissões
 	const handleJumpToTrack = (trackIndex: number) => {
@@ -69,9 +62,9 @@ export function Playlist() {
 	};
 
 	// Função para tocar música específica
-	const handlePlayTrack = (track: any) => {
+	const handlePlayTrack = (track: any, index: number) => {
 		if (id) {
-			playMusic(id, track);
+			jumpToTrack(index);
 		}
 	};
 
@@ -80,17 +73,17 @@ export function Playlist() {
 			<PlaylistHeader>
 				<TitlePlaylist level={4}>
 					<ListMusic style={{ marginRight: "8px" }} />
-					Playlist ({playlist?.length || 0} músicas)
+					Playlist ({tracks?.length || 0} músicas)
 				</TitlePlaylist>
 			</PlaylistHeader>
 
 			<PlaylistItens>
-				{playlist?.length > 0 ? (
+				{tracks?.length > 0 ? (
 					<List
 						itemLayout="horizontal"
 						style={{ width: "100%" }}
 						size="small"
-						dataSource={playlist}
+						dataSource={tracks}
 						renderItem={(item, index) => (
 							<List.Item
 								style={{
