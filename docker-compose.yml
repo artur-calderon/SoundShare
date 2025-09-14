@@ -19,6 +19,7 @@ services:
         container_name: soundshare-nginx
         ports:
             - "8084:80"
+            - "8443:443"
         volumes:
             - ./nginx/conf.d:/etc/nginx/conf.d
             - ./frontend/dist:/usr/share/nginx/html
@@ -28,16 +29,16 @@ services:
         networks:
             - soundshare-network
 
-    # certbot:
-    #   image: certbot/certbot
-    #   container_name: soundshare-certbot
-    #   volumes:
-    #     - ./certbot/conf:/etc/letsencrypt
-    #     - ./certbot/www:/var/www/certbot
-    #   entrypoint: >
-    #     sh -c "trap exit TERM; while :; do sleep 12h & wait $${!}; certbot renew; done"
-    #   networks:
-    #     - soundshare-network
+    certbot:
+      image: certbot/certbot
+      container_name: soundshare-certbot
+      volumes:
+        - ./certbot/conf:/etc/letsencrypt
+        - ./certbot/www:/var/www/certbot
+      entrypoint: >
+        sh -c "trap exit TERM; while :; do sleep 12h & wait $${!}; certbot renew; done"
+      networks:
+        - soundshare-network
 
 networks:
     soundshare-network:
