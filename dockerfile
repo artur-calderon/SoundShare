@@ -3,19 +3,18 @@
 # ===============================
 FROM node:18-alpine
 
-WORKDIR /server
+WORKDIR /app
 
-COPY . .
 # Copia package.json e instala dependências
-#COPY server/package*.json ./
+COPY server/package*.json ./
 RUN npm install
 
 # Copia o código fonte
-#COPY server/ ./
+COPY server/ ./
 RUN npm run build
 
 # Build do backend
-#RUN npm run build
+RUN npm run build
 
 # Expõe a porta que o backend vai rodar
 EXPOSE 1337

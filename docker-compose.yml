@@ -3,7 +3,7 @@ version: "3.8"
 services:
     backend:
         build:
-            context: ./server
+            context: .
         container_name: soundshare-backend
         environment:
             - NODE_ENV=production
@@ -14,20 +14,20 @@ services:
         networks:
             - soundshare-network
 
-    nginx:
-        image: nginx:alpine
-        container_name: soundshare-nginx
-        ports:
-            - "8084:80"
-            - "8443:443"
-        volumes:
-            - ./nginx/conf.d:/etc/nginx/conf.d
-            - ./frontend/dist:/usr/share/nginx/html
-            - /etc/letsencrypt:/etc/letsencrypt:ro
-        depends_on:
-            - backend
-        networks:
-            - soundshare-network
+    # nginx:
+    #     image: nginx:alpine
+    #     container_name: soundshare-nginx
+    #     ports:
+    #         - "8084:80"
+    #         - "8443:443"
+    #     volumes:
+    #         - ./nginx/conf.d:/etc/nginx/conf.d
+    #         - ./frontend/dist:/usr/share/nginx/html
+    #         - /etc/letsencrypt:/etc/letsencrypt:ro
+    #     depends_on:
+    #         - backend
+    #     networks:
+    #         - soundshare-network
 
     certbot:
       image: certbot/certbot
